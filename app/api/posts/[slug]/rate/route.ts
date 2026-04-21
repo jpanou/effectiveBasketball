@@ -7,8 +7,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   if (!score || score < 1 || score > 5) {
     return NextResponse.json({ error: "invalid_score" }, { status: 400 });
   }
-  const post = getPostBySlug(slug);
+  const post = await getPostBySlug(slug);
   if (!post) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  addRating(post.id, score);
+  await addRating(post.id, score);
   return NextResponse.json({ success: true });
 }

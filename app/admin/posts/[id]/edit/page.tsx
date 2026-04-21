@@ -9,7 +9,7 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
   if (!session) redirect("/admin/login");
 
   const { id } = await params;
-  const posts = getAllPostsAdmin();
+  const posts = await getAllPostsAdmin();
   const post = posts.find((p) => p.id === Number(id));
   if (!post) notFound();
 

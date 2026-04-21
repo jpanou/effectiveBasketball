@@ -6,8 +6,8 @@ import FeaturedSection from "@/components/home/FeaturedSection";
 import NewsletterSection from "@/components/home/NewsletterSection";
 import { getFeaturedPosts } from "@/lib/db";
 
-export default function HomePage() {
-  const featured = getFeaturedPosts();
+export default async function HomePage() {
+  const featured = await getFeaturedPosts();
 
   return (
     <>

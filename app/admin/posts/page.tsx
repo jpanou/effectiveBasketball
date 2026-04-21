@@ -9,7 +9,7 @@ export default async function AdminPostsPage() {
   const session = await getAdminSession();
   if (!session) redirect("/admin/login");
 
-  const posts = getAllPostsAdmin();
+  const posts = await getAllPostsAdmin();
 
   return (
     <AdminLayout>

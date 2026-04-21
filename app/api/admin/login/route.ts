@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   if (!username || !password) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
-  if (!verifyAdmin(username, password)) {
+  if (!(await verifyAdmin(username, password))) {
     return NextResponse.json({ error: "invalid_credentials" }, { status: 401 });
   }
   const token = await signToken({ username });

@@ -5,5 +5,5 @@ import { getAnalytics } from "@/lib/db";
 export async function GET() {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  return NextResponse.json(getAnalytics());
+  return NextResponse.json(await getAnalytics());
 }

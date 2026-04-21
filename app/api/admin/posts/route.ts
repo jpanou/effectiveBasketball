@@ -9,7 +9,7 @@ async function auth() {
 
 export async function GET() {
   if (!await auth()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  return NextResponse.json(getAllPostsAdmin());
+  return NextResponse.json(await getAllPostsAdmin());
 }
 
 export async function POST(req: NextRequest) {
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
   try {
-    createPost({ title, slug, excerpt: excerpt || "", content: content || "", type, featured: featured ? 1 : 0, published: published ? 1 : 0, thumbnail_url: thumbnail_url || "", video_url: video_url || "" });
+    await createPost({ title, slug, excerpt: excerpt || "", content: content || "", type, featured: featured ? 1 : 0, published: published ? 1 : 0, thumbnail_url: thumbnail_url || "", video_url: video_url || "" });
     return NextResponse.json({ success: true });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "error";

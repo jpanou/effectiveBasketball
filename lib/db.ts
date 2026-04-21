@@ -1,74 +1,5 @@
-import Database from "better-sqlite3";
-import path from "path";
 import bcrypt from "bcryptjs";
-
-const DB_PATH = path.join(process.cwd(), "data.db");
-
-let db: Database.Database;
-
-function getDb(): Database.Database {
-  if (!db) {
-    db = new Database(DB_PATH);
-    db.pragma("journal_mode = WAL");
-    db.pragma("foreign_keys = ON");
-    initSchema();
-  }
-  return db;
-}
-
-function initSchema() {
-  const d = db;
-  d.exec(`
-    CREATE TABLE IF NOT EXISTS posts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      slug TEXT UNIQUE NOT NULL,
-      excerpt TEXT DEFAULT '',
-      content TEXT DEFAULT '',
-      type TEXT NOT NULL CHECK(type IN ('article','tutorial','scouting')),
-      featured INTEGER DEFAULT 0,
-      views INTEGER DEFAULT 0,
-      published INTEGER DEFAULT 0,
-      thumbnail_url TEXT DEFAULT '',
-      video_url TEXT DEFAULT '',
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS ratings (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-      score REAL NOT NULL,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS newsletter (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
-      subscribed_at TEXT DEFAULT (datetime('now'))
-    );
-
-    CREATE TABLE IF NOT EXISTS admin_users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL
-    );
-  `);
-
-  const adminUsername = process.env.ADMIN_USERNAME || "coachStratakos";
-  const adminPassword = process.env.ADMIN_PASSWORD || "123456789";
-
-  // Remove stale 'admin' default user if it exists alongside a real account
-  d.prepare("DELETE FROM admin_users WHERE username = 'admin'").run();
-
-  // Seed if no admin users exist
-  const anyAdmin = d.prepare("SELECT id FROM admin_users LIMIT 1").get();
-  if (!anyAdmin) {
-    const hash = bcrypt.hashSync(adminPassword, 10);
-    d.prepare("INSERT OR IGNORE INTO admin_users (username, password_hash) VALUES (?, ?)").run(adminUsername, hash);
-  }
-}
-
-// ─── Post queries ──────────────────────────────────────────────────────────────
+import { supabase } from "./supabase";
 
 export type PostType = "article" | "tutorial" | "scouting";
 export type SortBy = "newest" | "highest_rated" | "most_viewed";
@@ -89,133 +20,239 @@ export interface Post {
   avg_rating?: number;
 }
 
-export function getPosts(type?: PostType, sort: SortBy = "newest", publishedOnly = true): Post[] {
-  const d = getDb();
-  let query = `
-    SELECT p.*, COALESCE(AVG(r.score), 0) as avg_rating
-    FROM posts p
-    LEFT JOIN ratings r ON r.post_id = p.id
-    WHERE 1=1
-  `;
-  const params: unknown[] = [];
-
-  if (type) { query += " AND p.type = ?"; params.push(type); }
-  if (publishedOnly) { query += " AND p.published = 1"; }
-
-  query += " GROUP BY p.id";
-
-  if (sort === "newest") query += " ORDER BY p.created_at DESC";
-  else if (sort === "highest_rated") query += " ORDER BY avg_rating DESC, p.created_at DESC";
-  else if (sort === "most_viewed") query += " ORDER BY p.views DESC, p.created_at DESC";
-
-  return d.prepare(query).all(...params) as Post[];
+interface RatingRow {
+  score: number;
 }
 
-export function getPostBySlug(slug: string): Post | undefined {
-  const d = getDb();
-  return d.prepare(`
-    SELECT p.*, COALESCE(AVG(r.score), 0) as avg_rating
-    FROM posts p
-    LEFT JOIN ratings r ON r.post_id = p.id
-    WHERE p.slug = ?
-    GROUP BY p.id
-  `).get(slug) as Post | undefined;
+type PostWithRatings = Post & { ratings?: RatingRow[] };
+
+function attachAvgRating(row: PostWithRatings): Post {
+  const ratings = row.ratings ?? [];
+  const avg = ratings.length
+    ? ratings.reduce((sum, r) => sum + r.score, 0) / ratings.length
+    : 0;
+  const { ratings: _ratings, ...rest } = row;
+  void _ratings;
+  return { ...rest, avg_rating: avg };
 }
 
-export function incrementViews(id: number) {
-  getDb().prepare("UPDATE posts SET views = views + 1 WHERE id = ?").run(id);
+// ─── Post queries ──────────────────────────────────────────────────────────────
+
+export async function getPosts(
+  type?: PostType,
+  sort: SortBy = "newest",
+  publishedOnly = true
+): Promise<Post[]> {
+  let query = supabase
+    .from("posts")
+    .select("*, ratings(score)");
+
+  if (type) query = query.eq("type", type);
+  if (publishedOnly) query = query.eq("published", 1);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const posts = (data as PostWithRatings[]).map(attachAvgRating);
+
+  if (sort === "newest") {
+    posts.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  } else if (sort === "highest_rated") {
+    posts.sort(
+      (a, b) =>
+        (b.avg_rating ?? 0) - (a.avg_rating ?? 0) ||
+        b.created_at.localeCompare(a.created_at)
+    );
+  } else if (sort === "most_viewed") {
+    posts.sort(
+      (a, b) => b.views - a.views || b.created_at.localeCompare(a.created_at)
+    );
+  }
+  return posts;
 }
 
-export function addRating(postId: number, score: number) {
-  getDb().prepare("INSERT INTO ratings (post_id, score) VALUES (?, ?)").run(postId, score);
+export async function getPostBySlug(slug: string): Promise<Post | undefined> {
+  const { data, error } = await supabase
+    .from("posts")
+    .select("*, ratings(score)")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return undefined;
+  return attachAvgRating(data as PostWithRatings);
 }
 
-export function getFeaturedPosts(): Post[] {
-  const d = getDb();
-  return d.prepare(`
-    SELECT p.*, COALESCE(AVG(r.score), 0) as avg_rating
-    FROM posts p
-    LEFT JOIN ratings r ON r.post_id = p.id
-    WHERE p.featured = 1 AND p.published = 1
-    GROUP BY p.id
-    ORDER BY p.created_at DESC
-  `).all() as Post[];
+export async function incrementViews(id: number): Promise<void> {
+  const { data, error: selectError } = await supabase
+    .from("posts")
+    .select("views")
+    .eq("id", id)
+    .maybeSingle();
+  if (selectError) throw selectError;
+  if (!data) return;
+  const { error } = await supabase
+    .from("posts")
+    .update({ views: (data.views ?? 0) + 1 })
+    .eq("id", id);
+  if (error) throw error;
 }
 
-export function createPost(data: Omit<Post, "id" | "views" | "created_at" | "avg_rating">) {
-  const d = getDb();
-  return d.prepare(`
-    INSERT INTO posts (title, slug, excerpt, content, type, featured, published, thumbnail_url, video_url)
-    VALUES (@title, @slug, @excerpt, @content, @type, @featured, @published, @thumbnail_url, @video_url)
-  `).run(data);
+export async function addRating(postId: number, score: number): Promise<void> {
+  const { error } = await supabase
+    .from("ratings")
+    .insert({ post_id: postId, score });
+  if (error) throw error;
 }
 
-export function updatePost(id: number, data: Partial<Omit<Post, "id" | "views" | "created_at" | "avg_rating">>) {
-  const d = getDb();
-  const fields = Object.keys(data).map(k => `${k} = @${k}`).join(", ");
-  return d.prepare(`UPDATE posts SET ${fields} WHERE id = @id`).run({ ...data, id });
+export async function getFeaturedPosts(): Promise<Post[]> {
+  const { data, error } = await supabase
+    .from("posts")
+    .select("*, ratings(score)")
+    .eq("featured", 1)
+    .eq("published", 1)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data as PostWithRatings[]).map(attachAvgRating);
 }
 
-export function deletePost(id: number) {
-  getDb().prepare("DELETE FROM posts WHERE id = ?").run(id);
+export async function createPost(
+  data: Omit<Post, "id" | "views" | "created_at" | "avg_rating">
+): Promise<void> {
+  const { error } = await supabase.from("posts").insert(data);
+  if (error) throw error;
 }
 
-export function getAllPostsAdmin(): Post[] {
-  const d = getDb();
-  return d.prepare(`
-    SELECT p.*, COALESCE(AVG(r.score), 0) as avg_rating
-    FROM posts p
-    LEFT JOIN ratings r ON r.post_id = p.id
-    GROUP BY p.id
-    ORDER BY p.created_at DESC
-  `).all() as Post[];
+export async function updatePost(
+  id: number,
+  data: Partial<Omit<Post, "id" | "views" | "created_at" | "avg_rating">>
+): Promise<void> {
+  const { error } = await supabase.from("posts").update(data).eq("id", id);
+  if (error) throw error;
+}
+
+export async function deletePost(id: number): Promise<void> {
+  const { error } = await supabase.from("posts").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function getAllPostsAdmin(): Promise<Post[]> {
+  const { data, error } = await supabase
+    .from("posts")
+    .select("*, ratings(score)")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data as PostWithRatings[]).map(attachAvgRating);
 }
 
 // ─── Newsletter ────────────────────────────────────────────────────────────────
 
-export function subscribeNewsletter(email: string) {
-  try {
-    getDb().prepare("INSERT INTO newsletter (email) VALUES (?)").run(email);
-    return { success: true };
-  } catch {
-    return { success: false, error: "already_subscribed" };
+export async function subscribeNewsletter(
+  email: string
+): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase.from("newsletter").insert({ email });
+  if (error) {
+    if (error.code === "23505") return { success: false, error: "already_subscribed" };
+    return { success: false, error: error.message };
   }
+  return { success: true };
 }
 
-export function getNewsletterCount(): number {
-  return (getDb().prepare("SELECT COUNT(*) as count FROM newsletter").get() as { count: number }).count;
+export async function getNewsletterCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from("newsletter")
+    .select("*", { count: "exact", head: true });
+  if (error) throw error;
+  return count ?? 0;
 }
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
-export function getAnalytics() {
-  const d = getDb();
-  const totalPosts = (d.prepare("SELECT COUNT(*) as count FROM posts WHERE published=1").get() as { count: number }).count;
-  const totalViews = (d.prepare("SELECT COALESCE(SUM(views),0) as total FROM posts").get() as { total: number }).total;
-  const subscribers = getNewsletterCount();
-  const topPosts = d.prepare(`
-    SELECT id, title, type, views, slug FROM posts
-    ORDER BY views DESC LIMIT 10
-  `).all();
-  return { totalPosts, totalViews, subscribers, topPosts };
+export async function getAnalytics() {
+  const { count: totalPosts, error: e1 } = await supabase
+    .from("posts")
+    .select("*", { count: "exact", head: true })
+    .eq("published", 1);
+  if (e1) throw e1;
+
+  const { data: allPosts, error: e2 } = await supabase
+    .from("posts")
+    .select("views");
+  if (e2) throw e2;
+  const totalViews = (allPosts ?? []).reduce((sum, p) => sum + (p.views ?? 0), 0);
+
+  const subscribers = await getNewsletterCount();
+
+  const { data: topPosts, error: e3 } = await supabase
+    .from("posts")
+    .select("id, title, type, views, slug")
+    .order("views", { ascending: false })
+    .limit(10);
+  if (e3) throw e3;
+
+  return { totalPosts: totalPosts ?? 0, totalViews, subscribers, topPosts: topPosts ?? [] };
 }
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────
 
-export function verifyAdmin(username: string, password: string): boolean {
-  const user = getDb().prepare("SELECT password_hash FROM admin_users WHERE username = ?").get(username) as { password_hash: string } | undefined;
-  if (!user) return false;
-  return bcrypt.compareSync(password, user.password_hash);
+async function ensureAdminSeeded() {
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (data) return;
+
+  const username = process.env.ADMIN_USERNAME || "coachStratakos";
+  const password = process.env.ADMIN_PASSWORD || "123456789";
+  const hash = bcrypt.hashSync(password, 10);
+  await supabase.from("admin_users").insert({ username, password_hash: hash });
 }
 
-export function updateAdminCredentials(newUsername: string, newPassword: string) {
-  const d = getDb();
+export async function verifyAdmin(username: string, password: string): Promise<boolean> {
+  await ensureAdminSeeded();
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("password_hash")
+    .eq("username", username)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return false;
+  return bcrypt.compareSync(password, data.password_hash);
+}
+
+export async function updateAdminCredentials(
+  newUsername: string,
+  newPassword: string
+): Promise<void> {
   const hash = bcrypt.hashSync(newPassword, 10);
-  d.prepare("UPDATE admin_users SET username = ?, password_hash = ?").run(newUsername, hash);
+  const { data: existing } = await supabase
+    .from("admin_users")
+    .select("id")
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from("admin_users")
+      .update({ username: newUsername, password_hash: hash })
+      .eq("id", existing.id);
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from("admin_users")
+      .insert({ username: newUsername, password_hash: hash });
+    if (error) throw error;
+  }
 }
 
-export function getAdminUsername(): string {
-  const d = getDb();
-  const row = d.prepare("SELECT username FROM admin_users LIMIT 1").get() as { username: string } | undefined;
-  return row?.username ?? "";
+export async function getAdminUsername(): Promise<string> {
+  await ensureAdminSeeded();
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("username")
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.username ?? "";
 }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { supabase } from "@/lib/supabase";
+
+const BUCKET = "uploads";
 
 export async function POST(req: NextRequest) {
   const session = await getAdminSession();
@@ -11,15 +12,17 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "no_file" }, { status: 400 });
 
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadsDir, { recursive: true });
-
   const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-  const filePath = path.join(uploadsDir, safeName);
-  await writeFile(filePath, buffer);
+  const bytes = await file.arrayBuffer();
 
-  return NextResponse.json({ url: `/uploads/${safeName}` });
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(safeName, bytes, { contentType: file.type, upsert: false });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(safeName);
+  return NextResponse.json({ url: data.publicUrl });
 }

@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import PostListingPage from "@/components/PostListingPage";
 import { getPosts } from "@/lib/db";
 
-export default function TutorialsPage() {
-  const posts = getPosts("tutorial", "newest");
+export default async function TutorialsPage() {
+  const posts = await getPosts("tutorial", "newest");
   return (
     <PostListingPage
       title="TUTORIALS"

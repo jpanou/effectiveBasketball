@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: "invalid_email" }, { status: 400 });
   }
-  const result = subscribeNewsletter(email);
+  const result = await subscribeNewsletter(email);
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 409 });
   }

@@ -7,7 +7,7 @@ export default async function AdminDashboardPage() {
   const session = await getAdminSession();
   if (!session) redirect("/admin/login");
 
-  const { totalPosts, totalViews, subscribers, topPosts } = getAnalytics();
+  const { totalPosts, totalViews, subscribers, topPosts } = await getAnalytics();
 
   return (
     <AdminLayout>

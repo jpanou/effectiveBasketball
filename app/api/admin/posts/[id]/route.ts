@@ -11,13 +11,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!await auth()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
   const body = await req.json();
-  updatePost(Number(id), body);
+  await updatePost(Number(id), body);
   return NextResponse.json({ success: true });
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!await auth()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
-  deletePost(Number(id));
+  await deletePost(Number(id));
   return NextResponse.json({ success: true });
 }

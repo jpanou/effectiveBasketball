@@ -5,6 +5,6 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type") as PostType | null;
   const sort = (searchParams.get("sort") || "newest") as SortBy;
-  const posts = getPosts(type || undefined, sort, true);
+  const posts = await getPosts(type || undefined, sort, true);
   return NextResponse.json(posts);
 }
