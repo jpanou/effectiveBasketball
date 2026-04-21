@@ -167,29 +167,153 @@ export async function getNewsletterCount(): Promise<number> {
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
 
+export interface TimeSeriesPoint {
+  date: string;
+  value: number;
+}
+
+export interface RecentReview {
+  score: number;
+  created_at: string;
+  post_title: string;
+  post_slug: string;
+  post_type: PostType;
+}
+
+function buildDailySeries(
+  rows: { created_at: string; value?: number }[],
+  days: number
+): TimeSeriesPoint[] {
+  const series: TimeSeriesPoint[] = [];
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    const d = new Date(r.created_at);
+    if (isNaN(d.getTime())) continue;
+    const key = d.toISOString().slice(0, 10);
+    map.set(key, (map.get(key) ?? 0) + (r.value ?? 1));
+  }
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCDate(today.getUTCDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    series.push({ date: key, value: map.get(key) ?? 0 });
+  }
+  return series;
+}
+
+async function selectWithFallback<T>(
+  table: string,
+  primary: string,
+  fallback: string
+): Promise<T[]> {
+  const first = await supabase.from(table).select(primary);
+  if (!first.error) return (first.data ?? []) as T[];
+  if (first.error.code === "42703") {
+    const second = await supabase.from(table).select(fallback);
+    if (second.error) throw second.error;
+    return (second.data ?? []) as T[];
+  }
+  throw first.error;
+}
+
 export async function getAnalytics() {
+  const DAYS = 30;
+
   const { count: totalPosts, error: e1 } = await supabase
     .from("posts")
     .select("*", { count: "exact", head: true })
     .eq("published", 1);
   if (e1) throw e1;
 
-  const { data: allPosts, error: e2 } = await supabase
-    .from("posts")
-    .select("views");
-  if (e2) throw e2;
-  const totalViews = (allPosts ?? []).reduce((sum, p) => sum + (p.views ?? 0), 0);
+  const allPosts = await selectWithFallback<{
+    id: number;
+    title: string;
+    slug: string;
+    type: PostType;
+    views: number | null;
+    created_at: string | null;
+  }>("posts", "id, title, slug, type, views, created_at", "id, title, slug, type, views");
+
+  const totalViews = allPosts.reduce((sum, p) => sum + (p.views ?? 0), 0);
 
   const subscribers = await getNewsletterCount();
 
-  const { data: topPosts, error: e3 } = await supabase
-    .from("posts")
-    .select("id, title, type, views, slug")
-    .order("views", { ascending: false })
-    .limit(10);
-  if (e3) throw e3;
+  const topPosts = [...allPosts]
+    .sort((a, b) => (b.views ?? 0) - (a.views ?? 0))
+    .slice(0, 10);
 
-  return { totalPosts: totalPosts ?? 0, totalViews, subscribers, topPosts: topPosts ?? [] };
+  const viewsSeries = buildDailySeries(
+    allPosts
+      .filter((p) => p.created_at)
+      .map((p) => ({ created_at: p.created_at as string, value: p.views ?? 0 })),
+    DAYS
+  );
+
+  const subRows = await selectWithFallback<{ created_at: string | null }>(
+    "newsletter",
+    "created_at",
+    "email"
+  );
+  const subscribersSeries = buildDailySeries(
+    subRows
+      .filter((r) => r.created_at)
+      .map((r) => ({ created_at: r.created_at as string })),
+    DAYS
+  );
+
+  const ratingRows = await selectWithFallback<{
+    score: number;
+    post_id: number;
+    created_at: string | null;
+  }>("ratings", "score, created_at, post_id", "score, post_id");
+
+  const ratingsSeries = buildDailySeries(
+    ratingRows
+      .filter((r) => r.created_at)
+      .map((r) => ({ created_at: r.created_at as string })),
+    DAYS
+  );
+
+  const totalRatings = ratingRows.length;
+  const avgRating =
+    totalRatings === 0
+      ? 0
+      : ratingRows.reduce((sum, r) => sum + (r.score ?? 0), 0) / totalRatings;
+
+  const postMap = new Map<number, { title: string; slug: string; type: PostType }>();
+  for (const p of allPosts) {
+    postMap.set(p.id, { title: p.title, slug: p.slug, type: p.type });
+  }
+
+  const sortedReviews = ratingRows
+    .slice()
+    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+
+  const recentReviews: RecentReview[] = sortedReviews.slice(0, 8).map((r) => {
+    const p = postMap.get(r.post_id);
+    return {
+      score: r.score,
+      created_at: r.created_at ?? "",
+      post_title: p?.title ?? "—",
+      post_slug: p?.slug ?? "",
+      post_type: (p?.type ?? "article") as PostType,
+    };
+  });
+
+  return {
+    totalPosts: totalPosts ?? 0,
+    totalViews,
+    subscribers,
+    totalRatings,
+    avgRating,
+    topPosts,
+    viewsSeries,
+    subscribersSeries,
+    ratingsSeries,
+    recentReviews,
+  };
 }
 
 // ─── Auth ──────────────────────────────────────────────────────────────────────

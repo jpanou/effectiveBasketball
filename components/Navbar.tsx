@@ -36,16 +36,18 @@ export default function Navbar() {
         <Link href="/" className="flex items-center gap-3 group cursor-pointer">
           <Image
             src="/assets/basketball-coach-logo-transparent.png"
-            alt="Basketball Coach Logo"
-            width={48}
-            height={48}
-            className="object-contain"
+            alt="Basketball Coach"
+            width={56}
+            height={56}
+            priority
+            className="h-12 w-auto object-contain"
           />
-          <span className="text-[#F97316] text-2xl leading-none" style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}>
-            EFFECTIVE
-          </span>
-          <span className="text-white text-2xl leading-none" style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}>
-            BASKETBALL
+          <span
+            className="hidden sm:inline-flex items-baseline gap-2 whitespace-nowrap"
+            style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.08em" }}
+          >
+            <span className="text-[#F97316] text-2xl">EFFECTIVE</span>
+            <span className="text-white text-2xl">BASKETBALL</span>
           </span>
         </Link>
 

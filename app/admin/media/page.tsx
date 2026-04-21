@@ -2,17 +2,18 @@ import { redirect } from "next/navigation";
 import { getAdminSession } from "@/lib/auth";
 import AdminLayout from "@/components/AdminLayout";
 import AdminMediaLibrary from "@/components/admin/AdminMediaLibrary";
-import { readdir } from "fs/promises";
-import path from "path";
+import { supabase } from "@/lib/supabase";
+
+const BUCKET = "uploads";
 
 async function getUploads(): Promise<string[]> {
-  try {
-    const dir = path.join(process.cwd(), "public", "uploads");
-    const files = await readdir(dir);
-    return files.map((f) => `/uploads/${f}`);
-  } catch {
-    return [];
-  }
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .list("", { limit: 1000, sortBy: { column: "created_at", order: "desc" } });
+  if (error || !data) return [];
+  return data
+    .filter((f) => f.name && !f.name.endsWith("/"))
+    .map((f) => supabase.storage.from(BUCKET).getPublicUrl(f.name).data.publicUrl);
 }
 
 export default async function AdminMediaPage() {

@@ -26,3 +26,23 @@ export async function POST(req: NextRequest) {
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(safeName);
   return NextResponse.json({ url: data.publicUrl });
 }
+
+export async function DELETE(req: NextRequest) {
+  const session = await getAdminSession();
+  if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const { url } = await req.json().catch(() => ({ url: null }));
+  if (!url || typeof url !== "string") {
+    return NextResponse.json({ error: "no_url" }, { status: 400 });
+  }
+
+  const marker = `/${BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if (idx === -1) return NextResponse.json({ error: "invalid_url" }, { status: 400 });
+  const path = decodeURIComponent(url.slice(idx + marker.length).split("?")[0]);
+
+  const { error } = await supabase.storage.from(BUCKET).remove([path]);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
+}

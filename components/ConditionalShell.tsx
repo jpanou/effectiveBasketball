@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import CookieConsent from "@/components/CookieConsent";
 import { RadialGradientBackground } from "@/components/ui/radial-gradient-background";
 
 export default function ConditionalShell({ children }: { children: React.ReactNode }) {
@@ -22,6 +23,7 @@ export default function ConditionalShell({ children }: { children: React.ReactNo
       <Navbar />
       <main className="relative z-10">{children}</main>
       <Footer />
+      <CookieConsent />
     </>
   );
 }

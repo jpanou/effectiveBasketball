@@ -8,18 +8,50 @@ export default function AdminMediaLibrary({ initialFiles }: { initialFiles: stri
   const [files, setFiles] = useState<string[]>(initialFiles);
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleDelete(url: string) {
+    if (!confirm("Να διαγραφεί οριστικά αυτό το αρχείο;")) return;
+    setDeleting(url);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/upload", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Η διαγραφή απέτυχε");
+        return;
+      }
+      setFiles((prev) => prev.filter((f) => f !== url));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Σφάλμα δικτύου");
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setError(null);
     const fd = new FormData();
     fd.append("file", file);
     try {
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Η μεταφόρτωση απέτυχε");
+        return;
+      }
       if (data.url) setFiles((prev) => [data.url, ...prev]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Σφάλμα δικτύου");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -43,6 +75,7 @@ export default function AdminMediaLibrary({ initialFiles }: { initialFiles: stri
           {uploading ? "Μεταφόρτωση..." : "Μεταφόρτωση Αρχείου"}
           <input ref={inputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleUpload} />
         </label>
+        {error && <p className="mt-3 text-red-400 text-sm">{error}</p>}
       </div>
 
       {files.length === 0 ? (
@@ -64,12 +97,19 @@ export default function AdminMediaLibrary({ initialFiles }: { initialFiles: stri
                 <img src={url} alt={url} className="w-full h-full object-cover" />
               )}
               {/* Overlay */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">
                 <button
                   onClick={() => copyUrl(url)}
                   className="bg-[#F97316] text-white text-xs px-3 py-1.5 rounded-lg cursor-pointer font-medium"
                 >
                   {copied === url ? "Αντιγράφηκε!" : "Αντιγραφή URL"}
+                </button>
+                <button
+                  onClick={() => handleDelete(url)}
+                  disabled={deleting === url}
+                  className="bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-xs px-3 py-1.5 rounded-lg cursor-pointer font-medium"
+                >
+                  {deleting === url ? "Διαγραφή..." : "Διαγραφή"}
                 </button>
               </div>
             </div>

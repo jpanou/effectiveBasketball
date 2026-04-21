@@ -45,15 +45,22 @@ export default function PostEditor({ post }: Props) {
 
   async function uploadFile(file: File, field: "thumbnail" | "video") {
     setUploading(true);
+    setError("");
     const fd = new FormData();
     fd.append("file", file);
     try {
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Η μεταφόρτωση απέτυχε");
+        return;
+      }
       if (data.url) {
         if (field === "thumbnail") setThumbnailUrl(data.url);
         else setVideoUrl(data.url);
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Σφάλμα δικτύου");
     } finally {
       setUploading(false);
     }
