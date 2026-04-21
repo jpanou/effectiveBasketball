@@ -1,0 +1,86 @@
+import { redirect } from "next/navigation";
+import { getAdminSession } from "@/lib/auth";
+import { getAnalytics } from "@/lib/db";
+import AdminLayout from "@/components/AdminLayout";
+
+export default async function AdminDashboardPage() {
+  const session = await getAdminSession();
+  if (!session) redirect("/admin/login");
+
+  const { totalPosts, totalViews, subscribers, topPosts } = getAnalytics();
+
+  return (
+    <AdminLayout>
+      <div className="p-8">
+        <h1
+          className="text-3xl text-white mb-8"
+          style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
+        >
+          ANALYTICS
+        </h1>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+          {[
+            { label: "Δημοσιευμένες Αναρτήσεις", value: totalPosts, icon: "📝" },
+            { label: "Συνολικές Προβολές", value: totalViews, icon: "👁" },
+            { label: "Newsletter Subscribers", value: subscribers, icon: "✉" },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-[#111] border border-[#222] rounded-2xl p-6">
+              <p className="text-gray-500 text-xs uppercase tracking-wide mb-2">{stat.label}</p>
+              <p
+                className="text-4xl text-[#F97316]"
+                style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
+              >
+                {stat.value.toLocaleString()}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Top posts table */}
+        <div className="bg-[#111] border border-[#222] rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-[#222]">
+            <h2
+              className="text-lg text-white"
+              style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
+            >
+              TOP ΑΝΑΡΤΗΣΕΙΣ ΜΕ ΒΑΣΗ ΤΙΣ ΠΡΟΒΟΛΕΣ
+            </h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#1A1A1A] text-gray-500 text-xs uppercase">
+                  <th className="text-left px-6 py-3">Τίτλος</th>
+                  <th className="text-left px-6 py-3">Τύπος</th>
+                  <th className="text-right px-6 py-3">Προβολές</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(topPosts as Array<{ id: number; title: string; type: string; views: number; slug: string }>).map((post) => (
+                  <tr key={post.id} className="border-b border-[#1A1A1A] hover:bg-[#1A1A1A] transition-colors">
+                    <td className="px-6 py-3 text-white">{post.title}</td>
+                    <td className="px-6 py-3">
+                      <span className="bg-[#F97316]/10 text-[#F97316] text-xs px-2 py-0.5 rounded-full capitalize">
+                        {post.type}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-right text-gray-400">{post.views}</td>
+                  </tr>
+                ))}
+                {topPosts.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-8 text-center text-gray-600 text-sm">
+                      Δεν υπάρχουν δεδομένα ακόμα
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </AdminLayout>
+  );
+}
