@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getAdminSession } from "@/lib/auth";
 import { updatePost, deletePost } from "@/lib/db";
 
@@ -12,6 +13,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const body = await req.json();
   await updatePost(Number(id), body);
+
+  const { slug } = body;
+  if (slug) {
+    revalidatePath(`/articles/${slug}`);
+    revalidatePath(`/tutorials/${slug}`);
+    revalidatePath(`/scouting/${slug}`);
+  }
+  revalidatePath("/articles");
+  revalidatePath("/tutorials");
+  revalidatePath("/scouting");
+  revalidatePath("/admin/posts");
+  revalidatePath("/");
+
   return NextResponse.json({ success: true });
 }
 

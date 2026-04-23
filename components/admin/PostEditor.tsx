@@ -207,7 +207,7 @@ export default function PostEditor({ post }: Props) {
               image={previewUrl}
               aspectRatio={2}
               cropPadding={0}
-              minZoom={1}
+              minZoom={0.5}
               maxZoom={5}
               zoom={cropZoom}
               onCropChange={handleCropChange}
@@ -225,7 +225,7 @@ export default function PostEditor({ post }: Props) {
               </svg>
               <input
                 type="range"
-                min={1}
+                min={0.5}
                 max={5}
                 step={0.01}
                 value={cropZoom}
