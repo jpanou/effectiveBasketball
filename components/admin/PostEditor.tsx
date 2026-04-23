@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Post } from "@/lib/db";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import Toggle from "@/components/admin/Toggle";
+import { Cropper, CropperCropArea, CropperDescription, CropperImage } from "@/components/ui/image-crop";
 
 interface Props {
   post?: Post;
@@ -39,7 +40,21 @@ export default function PostEditor({ post }: Props) {
   const [featured, setFeatured] = useState(!!post?.featured);
   const [thumbnailUrl, setThumbnailUrl] = useState(post?.thumbnail_url || "");
   const [thumbnailPosition, setThumbnailPosition] = useState(post?.thumbnail_position || "50% 50%");
+  const [cropZoom, setCropZoom] = useState(1);
+  const naturalSizeRef = useRef<{ w: number; h: number } | null>(null);
   const [videoUrl, setVideoUrl] = useState(post?.video_url || "");
+
+  const ytId = getYouTubeId(videoUrl);
+  const previewUrl = type === "tutorial"
+    ? (ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : null)
+    : thumbnailUrl || null;
+
+  useEffect(() => {
+    if (!previewUrl) { naturalSizeRef.current = null; return; }
+    const img = new window.Image();
+    img.onload = () => { naturalSizeRef.current = { w: img.naturalWidth, h: img.naturalHeight }; };
+    img.src = previewUrl;
+  }, [previewUrl]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -47,6 +62,15 @@ export default function PostEditor({ post }: Props) {
   function handleTitleChange(val: string) {
     setTitle(val);
     if (!isEdit) setSlug(slugify(val));
+  }
+
+  function handleCropChange(area: { x: number; y: number; width: number; height: number } | null) {
+    if (!area || !naturalSizeRef.current) return;
+    const { w, h } = naturalSizeRef.current;
+    const focalX = Math.round(((area.x + area.width / 2) / w) * 100);
+    const focalY = Math.round(((area.y + area.height / 2) / h) * 100);
+    const clamp = (v: number) => Math.max(0, Math.min(100, v));
+    setThumbnailPosition(`${clamp(focalX)}% ${clamp(focalY)}%`);
   }
 
   async function uploadFile(file: File, field: "thumbnail" | "video") {
@@ -151,54 +175,67 @@ export default function PostEditor({ post }: Props) {
         <div>
           <label className={labelCls}>Εικόνα Κεφαλίδας</label>
           <div className="flex gap-3 items-center">
-            <input className={`${inputCls} flex-1`} value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} placeholder="/uploads/..." />
+            <input
+              className={`${inputCls} flex-1`}
+              value={thumbnailUrl}
+              onChange={(e) => setThumbnailUrl(e.target.value)}
+              placeholder="/uploads/..."
+            />
             <label className="bg-[#1A1A1A] border border-[#333] hover:border-[#F97316] text-gray-400 hover:text-white px-4 py-3 rounded-xl text-sm cursor-pointer transition-colors whitespace-nowrap">
               Μεταφόρτωση
-              <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "thumbnail")} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadFile(file, "thumbnail"); }}
+              />
             </label>
           </div>
         </div>
       )}
 
-      {/* Focal point picker — shown when a thumbnail image is available */}
-      {(() => {
-        const previewUrl = type === "tutorial"
-          ? (() => { const id = getYouTubeId(videoUrl); return id ? `https://img.youtube.com/vi/${id}/maxresdefault.jpg` : null; })()
-          : thumbnailUrl || null;
-        if (!previewUrl) return null;
-        const [posX, posY] = thumbnailPosition.split(" ").map(v => parseFloat(v) || 50);
-        function handleFocalClick(e: React.MouseEvent<HTMLDivElement>) {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
-          const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
-          setThumbnailPosition(`${x}% ${y}%`);
-        }
-        return (
+      {/* Cropper — shown when a thumbnail is available */}
+      {previewUrl && (
           <div>
-            <p className={labelCls}>Εστίαση Εικόνας <span className="normal-case text-gray-600 tracking-normal">— κάνε κλικ για να ορίσεις το σημείο</span></p>
-            <div
-              className="relative w-full aspect-[2/1] rounded-xl overflow-hidden cursor-crosshair bg-[#1A1A1A] select-none"
-              onClick={handleFocalClick}
+            <p className={labelCls}>
+              Επεξεργασία Εικόνας
+              <span className="normal-case text-gray-600 tracking-normal ml-1">— σύρε για να επιλέξεις την περιοχή</span>
+            </p>
+            <Cropper
+              className="w-full rounded-xl bg-[#0A0A0A]"
+              style={{ aspectRatio: "2 / 1" }}
+              image={previewUrl}
+              aspectRatio={2}
+              cropPadding={0}
+              minZoom={1}
+              maxZoom={5}
+              zoom={cropZoom}
+              onCropChange={handleCropChange}
+              onZoomChange={setCropZoom}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={previewUrl}
-                alt="thumbnail preview"
-                className="w-full h-full object-cover pointer-events-none"
-                style={{ objectPosition: thumbnailPosition }}
+              <CropperDescription>Σύρε για να επιλέξεις το ορατό τμήμα της εικόνας</CropperDescription>
+              <CropperImage />
+              <CropperCropArea />
+            </Cropper>
+
+            {/* Zoom slider */}
+            <div className="mt-2 flex items-center gap-3">
+              <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607zM10.5 7.5v6m3-3h-6" />
+              </svg>
+              <input
+                type="range"
+                min={1}
+                max={5}
+                step={0.01}
+                value={cropZoom}
+                onChange={(e) => setCropZoom(parseFloat(e.target.value))}
+                className="flex-1 accent-[#F97316] cursor-pointer"
               />
-              {/* Focal point dot */}
-              <div
-                className="absolute w-5 h-5 rounded-full border-2 border-white bg-[#F97316]/80 shadow-lg pointer-events-none -translate-x-1/2 -translate-y-1/2"
-                style={{ left: `${posX}%`, top: `${posY}%` }}
-              />
-              <span className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-lg pointer-events-none">
-                {type === "tutorial" ? "Thumbnail από YouTube" : "Κλικ για εστίαση"}
-              </span>
+              <span className="text-xs text-gray-500 w-8 text-right tabular-nums">{cropZoom.toFixed(1)}×</span>
             </div>
           </div>
-        );
-      })()}
+      )}
 
       {/* Video (YouTube) */}
       <div>
