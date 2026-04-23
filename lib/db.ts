@@ -15,6 +15,7 @@ export interface Post {
   views: number;
   published: number;
   thumbnail_url: string;
+  thumbnail_position: string;
   video_url: string;
   created_at: string;
   avg_rating?: number;

@@ -29,6 +29,7 @@ export default function PostCard({ post }: { post: Post }) {
             src={post.thumbnail_url}
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            style={{ objectPosition: post.thumbnail_position || "center center" }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">

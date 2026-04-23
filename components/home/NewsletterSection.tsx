@@ -46,7 +46,7 @@ export default function NewsletterSection() {
             className="text-4xl md:text-5xl text-white mb-4"
             style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
           >
-            ΜΕΙΝΕ ΕΝΗΜΕΡΩΜΕΝΟΣ
+            STAY TUNED
           </h2>
           <p className="text-gray-400 mb-8 text-sm leading-relaxed">
             Εγγράψου στο newsletter και λάβε τα νέα άρθρα και tutorials απευθείας στο inbox σου

@@ -27,7 +27,7 @@ export default function HeroSection() {
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <p className="text-[#F97316] text-sm md:text-base tracking-[0.3em] uppercase font-medium mb-4">
-            Coach Ιωάννης Στρατάκος
+            Coach Ιωάννης Γ. Στρατάκος
           </p>
           <h1
             className="text-5xl md:text-7xl lg:text-8xl text-white leading-tight mb-6 max-w-4xl mx-auto"

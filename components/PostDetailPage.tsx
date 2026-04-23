@@ -94,12 +94,17 @@ export default function PostDetailPage({ post }: { post: Post }) {
             className="mb-8 rounded-2xl overflow-hidden"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={post.thumbnail_url} alt={post.title} className="w-full h-64 md:h-96 object-cover" />
+            <img
+              src={post.thumbnail_url}
+              alt={post.title}
+              className="w-full h-64 md:h-96 object-cover"
+              style={{ objectPosition: post.thumbnail_position || "center center" }}
+            />
           </motion.div>
         )}
 
-        {/* Video */}
-        {post.video_url && (
+        {/* Video — before content for non-scouting, after content for scouting */}
+        {post.video_url && post.type !== "scouting" && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -110,17 +115,9 @@ export default function PostDetailPage({ post }: { post: Post }) {
               const m = post.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
               const embedUrl = m ? `https://www.youtube.com/embed/${m[1]}` : null;
               return embedUrl ? (
-                <iframe
-                  src={embedUrl}
-                  className="w-full aspect-video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={post.title}
-                />
+                <iframe src={embedUrl} className="w-full aspect-video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={post.title} />
               ) : (
-                <video controls className="w-full" src={post.video_url}>
-                  Ο browser σας δεν υποστηρίζει video.
-                </video>
+                <video controls className="w-full" src={post.video_url}>Ο browser σας δεν υποστηρίζει video.</video>
               );
             })()}
           </motion.div>
@@ -134,6 +131,26 @@ export default function PostDetailPage({ post }: { post: Post }) {
           className="prose-eb"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
+
+        {/* Video — after content for scouting */}
+        {post.video_url && post.type === "scouting" && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-8 rounded-2xl overflow-hidden bg-black"
+          >
+            {(() => {
+              const m = post.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+              const embedUrl = m ? `https://www.youtube.com/embed/${m[1]}` : null;
+              return embedUrl ? (
+                <iframe src={embedUrl} className="w-full aspect-video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={post.title} />
+              ) : (
+                <video controls className="w-full" src={post.video_url}>Ο browser σας δεν υποστηρίζει video.</video>
+              );
+            })()}
+          </motion.div>
+        )}
 
         {/* Rating */}
         <motion.div

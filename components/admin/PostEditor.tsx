@@ -38,6 +38,7 @@ export default function PostEditor({ post }: Props) {
   const [published, setPublished] = useState(post ? !!post.published : true);
   const [featured, setFeatured] = useState(!!post?.featured);
   const [thumbnailUrl, setThumbnailUrl] = useState(post?.thumbnail_url || "");
+  const [thumbnailPosition, setThumbnailPosition] = useState(post?.thumbnail_position || "50% 50%");
   const [videoUrl, setVideoUrl] = useState(post?.video_url || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -79,7 +80,7 @@ export default function PostEditor({ post }: Props) {
     const effectiveThumbnail = youtubeId
       ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`
       : thumbnailUrl;
-    const body = { title, slug, excerpt, content, type, published, featured, thumbnail_url: effectiveThumbnail, video_url: videoUrl };
+    const body = { title, slug, excerpt, content, type, published, featured, thumbnail_url: effectiveThumbnail, thumbnail_position: thumbnailPosition, video_url: videoUrl };
     try {
       let res;
       if (isEdit) {
@@ -156,14 +157,48 @@ export default function PostEditor({ post }: Props) {
               <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "thumbnail")} />
             </label>
           </div>
-          {thumbnailUrl && (
-            <div className="mt-2 rounded-xl overflow-hidden h-32 bg-[#1A1A1A]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={thumbnailUrl} alt="thumbnail" className="h-full object-cover" />
-            </div>
-          )}
         </div>
       )}
+
+      {/* Focal point picker — shown when a thumbnail image is available */}
+      {(() => {
+        const previewUrl = type === "tutorial"
+          ? (() => { const id = getYouTubeId(videoUrl); return id ? `https://img.youtube.com/vi/${id}/maxresdefault.jpg` : null; })()
+          : thumbnailUrl || null;
+        if (!previewUrl) return null;
+        const [posX, posY] = thumbnailPosition.split(" ").map(v => parseFloat(v) || 50);
+        function handleFocalClick(e: React.MouseEvent<HTMLDivElement>) {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+          const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+          setThumbnailPosition(`${x}% ${y}%`);
+        }
+        return (
+          <div>
+            <p className={labelCls}>Εστίαση Εικόνας <span className="normal-case text-gray-600 tracking-normal">— κάνε κλικ για να ορίσεις το σημείο</span></p>
+            <div
+              className="relative w-full aspect-[2/1] rounded-xl overflow-hidden cursor-crosshair bg-[#1A1A1A] select-none"
+              onClick={handleFocalClick}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewUrl}
+                alt="thumbnail preview"
+                className="w-full h-full object-cover pointer-events-none"
+                style={{ objectPosition: thumbnailPosition }}
+              />
+              {/* Focal point dot */}
+              <div
+                className="absolute w-5 h-5 rounded-full border-2 border-white bg-[#F97316]/80 shadow-lg pointer-events-none -translate-x-1/2 -translate-y-1/2"
+                style={{ left: `${posX}%`, top: `${posY}%` }}
+              />
+              <span className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-lg pointer-events-none">
+                {type === "tutorial" ? "Thumbnail από YouTube" : "Κλικ για εστίαση"}
+              </span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Video (YouTube) */}
       <div>
@@ -177,22 +212,6 @@ export default function PostEditor({ post }: Props) {
         <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
           Ανέβασε το βίντεο στο YouTube και επικόλλησε τον σύνδεσμό του εδώ. Η άμεση μεταφόρτωση βίντεο δεν υποστηρίζεται.
         </p>
-        {type === "tutorial" && (() => {
-          const ytId = getYouTubeId(videoUrl);
-          return ytId ? (
-            <div className="mt-2 rounded-xl overflow-hidden h-32 bg-[#1A1A1A] relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`}
-                alt="YouTube thumbnail"
-                className="h-full w-full object-cover"
-              />
-              <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-lg">
-                Thumbnail από YouTube
-              </span>
-            </div>
-          ) : null;
-        })()}
       </div>
 
       {uploading && <p className="text-[#F97316] text-sm">Μεταφόρτωση αρχείου...</p>}
