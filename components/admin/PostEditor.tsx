@@ -10,6 +10,11 @@ interface Props {
   post?: Post;
 }
 
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
 function slugify(str: string) {
   return str
     .toLowerCase()
@@ -70,7 +75,11 @@ export default function PostEditor({ post }: Props) {
     if (!title || !slug || !type) { setError("Συμπληρώστε όλα τα υποχρεωτικά πεδία"); return; }
     setSaving(true);
     setError("");
-    const body = { title, slug, excerpt, content, type, published, featured, thumbnail_url: thumbnailUrl, video_url: videoUrl };
+    const youtubeId = type === "tutorial" ? getYouTubeId(videoUrl) : null;
+    const effectiveThumbnail = youtubeId
+      ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`
+      : thumbnailUrl;
+    const body = { title, slug, excerpt, content, type, published, featured, thumbnail_url: effectiveThumbnail, video_url: videoUrl };
     try {
       let res;
       if (isEdit) {
@@ -136,23 +145,25 @@ export default function PostEditor({ post }: Props) {
         <RichTextEditor value={content} onChange={setContent} />
       </div>
 
-      {/* Thumbnail upload */}
-      <div>
-        <label className={labelCls}>Εικόνα Κεφαλίδας</label>
-        <div className="flex gap-3 items-center">
-          <input className={`${inputCls} flex-1`} value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} placeholder="/uploads/..." />
-          <label className="bg-[#1A1A1A] border border-[#333] hover:border-[#F97316] text-gray-400 hover:text-white px-4 py-3 rounded-xl text-sm cursor-pointer transition-colors whitespace-nowrap">
-            Μεταφόρτωση
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "thumbnail")} />
-          </label>
-        </div>
-        {thumbnailUrl && (
-          <div className="mt-2 rounded-xl overflow-hidden h-32 bg-[#1A1A1A]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={thumbnailUrl} alt="thumbnail" className="h-full object-cover" />
+      {/* Thumbnail upload — hidden for tutorials (auto-derived from YouTube) */}
+      {type !== "tutorial" && (
+        <div>
+          <label className={labelCls}>Εικόνα Κεφαλίδας</label>
+          <div className="flex gap-3 items-center">
+            <input className={`${inputCls} flex-1`} value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} placeholder="/uploads/..." />
+            <label className="bg-[#1A1A1A] border border-[#333] hover:border-[#F97316] text-gray-400 hover:text-white px-4 py-3 rounded-xl text-sm cursor-pointer transition-colors whitespace-nowrap">
+              Μεταφόρτωση
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "thumbnail")} />
+            </label>
           </div>
-        )}
-      </div>
+          {thumbnailUrl && (
+            <div className="mt-2 rounded-xl overflow-hidden h-32 bg-[#1A1A1A]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={thumbnailUrl} alt="thumbnail" className="h-full object-cover" />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Video (YouTube) */}
       <div>
@@ -166,6 +177,22 @@ export default function PostEditor({ post }: Props) {
         <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
           Ανέβασε το βίντεο στο YouTube και επικόλλησε τον σύνδεσμό του εδώ. Η άμεση μεταφόρτωση βίντεο δεν υποστηρίζεται.
         </p>
+        {type === "tutorial" && (() => {
+          const ytId = getYouTubeId(videoUrl);
+          return ytId ? (
+            <div className="mt-2 rounded-xl overflow-hidden h-32 bg-[#1A1A1A] relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`}
+                alt="YouTube thumbnail"
+                className="h-full w-full object-cover"
+              />
+              <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-lg">
+                Thumbnail από YouTube
+              </span>
+            </div>
+          ) : null;
+        })()}
       </div>
 
       {uploading && <p className="text-[#F97316] text-sm">Μεταφόρτωση αρχείου...</p>}
