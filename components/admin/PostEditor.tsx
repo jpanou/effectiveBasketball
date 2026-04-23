@@ -154,16 +154,18 @@ export default function PostEditor({ post }: Props) {
         )}
       </div>
 
-      {/* Video upload */}
+      {/* Video (YouTube) */}
       <div>
-        <label className={labelCls}>Βίντεο</label>
-        <div className="flex gap-3 items-center">
-          <input className={`${inputCls} flex-1`} value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="/uploads/..." />
-          <label className="bg-[#1A1A1A] border border-[#333] hover:border-[#F97316] text-gray-400 hover:text-white px-4 py-3 rounded-xl text-sm cursor-pointer transition-colors whitespace-nowrap">
-            Μεταφόρτωση
-            <input type="file" accept="video/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0], "video")} />
-          </label>
-        </div>
+        <label className={labelCls}>Βίντεο (YouTube)</label>
+        <input
+          className={inputCls}
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+          placeholder="https://www.youtube.com/watch?v=..."
+        />
+        <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
+          Ανέβασε το βίντεο στο YouTube και επικόλλησε τον σύνδεσμό του εδώ. Η άμεση μεταφόρτωση βίντεο δεν υποστηρίζεται.
+        </p>
       </div>
 
       {uploading && <p className="text-[#F97316] text-sm">Μεταφόρτωση αρχείου...</p>}

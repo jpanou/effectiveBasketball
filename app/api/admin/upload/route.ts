@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "no_file" }, { status: 400 });
+  if (file.type.startsWith("video/")) return NextResponse.json({ error: "Τα βίντεο δεν υποστηρίζονται. Χρησιμοποίησε YouTube." }, { status: 400 });
 
   const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
   const bytes = await file.arrayBuffer();

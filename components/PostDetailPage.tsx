@@ -106,9 +106,23 @@ export default function PostDetailPage({ post }: { post: Post }) {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="mb-8 rounded-2xl overflow-hidden bg-black"
           >
-            <video controls className="w-full" src={post.video_url}>
-              Ο browser σας δεν υποστηρίζει video.
-            </video>
+            {(() => {
+              const m = post.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+              const embedUrl = m ? `https://www.youtube.com/embed/${m[1]}` : null;
+              return embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  className="w-full aspect-video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={post.title}
+                />
+              ) : (
+                <video controls className="w-full" src={post.video_url}>
+                  Ο browser σας δεν υποστηρίζει video.
+                </video>
+              );
+            })()}
           </motion.div>
         )}
 
