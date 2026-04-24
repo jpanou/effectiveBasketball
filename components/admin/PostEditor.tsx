@@ -42,6 +42,7 @@ export default function PostEditor({ post }: Props) {
   const [thumbnailPosition, setThumbnailPosition] = useState(post?.thumbnail_position || "50% 50%");
   const [cropZoom, setCropZoom] = useState(1);
   const naturalSizeRef = useRef<{ w: number; h: number } | null>(null);
+  const firstCropFireRef = useRef(true);
   const [videoUrl, setVideoUrl] = useState(post?.video_url || "");
 
   const ytId = getYouTubeId(videoUrl);
@@ -55,6 +56,10 @@ export default function PostEditor({ post }: Props) {
     img.onload = () => { naturalSizeRef.current = { w: img.naturalWidth, h: img.naturalHeight }; };
     img.src = previewUrl;
   }, [previewUrl]);
+
+  useEffect(() => {
+    firstCropFireRef.current = true;
+  }, [previewUrl]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -66,6 +71,10 @@ export default function PostEditor({ post }: Props) {
 
   function handleCropChange(area: { x: number; y: number; width: number; height: number } | null) {
     if (!area || !naturalSizeRef.current) return;
+    if (firstCropFireRef.current) {
+      firstCropFireRef.current = false;
+      return;
+    }
     const { w, h } = naturalSizeRef.current;
     const focalX = Math.round(((area.x + area.width / 2) / w) * 100);
     const focalY = Math.round(((area.y + area.height / 2) / h) * 100);
@@ -86,8 +95,12 @@ export default function PostEditor({ post }: Props) {
         return;
       }
       if (data.url) {
-        if (field === "thumbnail") setThumbnailUrl(data.url);
-        else setVideoUrl(data.url);
+        if (field === "thumbnail") {
+          setThumbnailUrl(data.url);
+          setThumbnailPosition("50% 50%");
+        } else {
+          setVideoUrl(data.url);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Σφάλμα δικτύου");

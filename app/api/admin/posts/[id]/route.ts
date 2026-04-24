@@ -12,9 +12,26 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!await auth()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
   const body = await req.json();
-  await updatePost(Number(id), body);
+  const { title, slug, excerpt, content, type, featured, published, thumbnail_url, thumbnail_position, video_url } = body;
 
-  const { slug } = body;
+  try {
+    await updatePost(Number(id), {
+      title,
+      slug,
+      excerpt: excerpt ?? "",
+      content: content ?? "",
+      type,
+      featured: featured ? 1 : 0,
+      published: published ? 1 : 0,
+      thumbnail_url: thumbnail_url ?? "",
+      thumbnail_position: thumbnail_position ?? "50% 50%",
+      video_url: video_url ?? "",
+    });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "error";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+
   if (slug) {
     revalidatePath(`/articles/${slug}`);
     revalidatePath(`/tutorials/${slug}`);
