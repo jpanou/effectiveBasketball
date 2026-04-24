@@ -46,18 +46,25 @@ export default function PostCard({ post }: { post: Post }) {
       </div>
 
       {/* Body */}
-      <div className="p-5">
+      <div className="p-5 flex flex-col">
         <h3
           className="text-lg text-white mb-2 group-hover:text-[#F97316] transition-colors duration-200 line-clamp-2"
           style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
         >
           {post.title}
         </h3>
-        {post.excerpt && (
-          <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-4">{post.excerpt}</p>
-        )}
+        <div className="mb-4 min-h-[2.5rem]">
+          {post.excerpt && (
+            <>
+              <p className="text-gray-500 text-sm leading-relaxed line-clamp-1">{post.excerpt}</p>
+              <span className="text-[#F97316] text-xs font-medium mt-0.5 inline-block">
+                See more →
+              </span>
+            </>
+          )}
+        </div>
 
-        <div className="flex items-center gap-4 text-xs text-gray-600">
+        <div className="flex items-center gap-4 text-xs text-gray-600 mt-auto">
           <span className="flex items-center gap-1">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
