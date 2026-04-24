@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Post } from "@/lib/db";
 import Toggle from "@/components/admin/Toggle";
 
-const typeLabel: Record<string, string> = { article: "Άρθρο", tutorial: "Tutorial", scouting: "Scouting" };
+const typeLabel: Record<string, string> = { article: "Άρθρο", tutorial: "Tutorial", scouting: "Scouting", document: "Έγγραφο" };
 
 export default function AdminPostsTable({ initialPosts }: { initialPosts: Post[] }) {
   const [posts, setPosts] = useState<Post[]>(initialPosts);

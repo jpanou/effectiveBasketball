@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Post } from "@/lib/db";
 import Toggle from "@/components/admin/Toggle";
 
-const typeLabel: Record<string, string> = { article: "Άρθρο", tutorial: "Tutorial", scouting: "Scouting" };
+const typeLabel: Record<string, string> = { article: "Άρθρο", tutorial: "Tutorial", scouting: "Scouting", document: "Έγγραφο" };
 
 export default function AdminFeaturedManager({ initialPosts }: { initialPosts: Post[] }) {
   const [posts, setPosts] = useState<Post[]>(initialPosts);
@@ -22,8 +22,9 @@ export default function AdminFeaturedManager({ initialPosts }: { initialPosts: P
     setSaving(null);
   }
 
-  const featured = posts.filter((p) => p.featured);
-  const rest = posts.filter((p) => !p.featured);
+  const eligiblePosts = posts.filter((p) => p.type !== "document");
+  const featured = eligiblePosts.filter((p) => p.featured);
+  const rest = eligiblePosts.filter((p) => !p.featured);
 
   return (
     <div className="space-y-8">

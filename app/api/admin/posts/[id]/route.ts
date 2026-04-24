@@ -40,6 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   revalidatePath("/articles");
   revalidatePath("/tutorials");
   revalidatePath("/scouting");
+  revalidatePath("/eggrafa");
   revalidatePath("/admin/posts");
   revalidatePath("/");
 

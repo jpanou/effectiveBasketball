@@ -18,11 +18,16 @@ const typeLabel: Record<string, string> = {
   article: "Άρθρο",
   tutorial: "Tutorial",
   scouting: "Scouting",
+  document: "Έγγραφο",
 };
 
 function getYouTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
   return m ? m[1] : null;
+}
+
+function isDocImage(url: string) {
+  return /\.(jpg|jpeg|png|gif|webp|svg|avif)(\?|$)/i.test(url);
 }
 
 function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
@@ -73,7 +78,7 @@ function PreviewOverlay({
   onClose,
 }: {
   title: string; excerpt: string; content: string;
-  type: "article" | "tutorial" | "scouting";
+  type: "article" | "tutorial" | "scouting" | "document";
   thumbnailUrl: string; thumbnailPosition: string; videoUrl: string;
   onClose: () => void;
 }) {
@@ -180,7 +185,7 @@ export default function PostEditor({ post }: Props) {
   const [slug, setSlug] = useState(post?.slug || "");
   const [excerpt, setExcerpt] = useState(post?.excerpt || "");
   const [content, setContent] = useState(post?.content || "");
-  const [type, setType] = useState<"article" | "tutorial" | "scouting">(post?.type || "article");
+  const [type, setType] = useState<"article" | "tutorial" | "scouting" | "document">(post?.type || "article");
   const [published, setPublished] = useState(post ? !!post.published : true);
   const [featured, setFeatured] = useState(!!post?.featured);
   const [thumbnailUrl, setThumbnailUrl] = useState(post?.thumbnail_url || "");
@@ -276,15 +281,52 @@ export default function PostEditor({ post }: Props) {
     }
   }
 
+  async function uploadDocumentFile(file: File) {
+    const MAX_DOC_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_DOC_SIZE) {
+      setError(`Το αρχείο πρέπει να είναι μικρότερο από 5MB. (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      return;
+    }
+    setUploading(true);
+    setError("");
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Η μεταφόρτωση απέτυχε"); return; }
+      if (data.url) setThumbnailUrl(data.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Σφάλμα δικτύου");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleSave() {
     if (!title || !slug || !type) { setError("Συμπληρώστε όλα τα υποχρεωτικά πεδία"); return; }
+    if (type === "document" && !thumbnailUrl) {
+      setError("Παρακαλώ μεταφορτώστε ένα αρχείο εγγράφου");
+      return;
+    }
     setSaving(true);
     setError("");
     const youtubeId = type === "tutorial" ? getYouTubeId(videoUrl) : null;
     const effectiveThumbnail = youtubeId
       ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`
       : thumbnailUrl;
-    const body = { title, slug, excerpt, content, type, published, featured, thumbnail_url: effectiveThumbnail, thumbnail_position: thumbnailPosition, video_url: videoUrl };
+    const body = {
+      title,
+      slug,
+      excerpt: type === "document" ? "" : excerpt,
+      content: type === "document" ? "" : content,
+      type,
+      published,
+      featured: type === "document" ? false : featured,
+      thumbnail_url: effectiveThumbnail,
+      thumbnail_position: type === "document" ? "50% 50%" : thumbnailPosition,
+      video_url: type === "document" ? "" : videoUrl,
+    };
     try {
       let res;
       if (isEdit) {
@@ -307,9 +349,14 @@ export default function PostEditor({ post }: Props) {
   const inputCls = "w-full bg-[#1A1A1A] border border-[#333] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#F97316] transition-colors";
   const labelCls = "block text-xs text-gray-500 uppercase tracking-wide mb-1.5";
 
+  // Derive display name from document file URL
+  const docFileName = thumbnailUrl
+    ? decodeURIComponent(thumbnailUrl.split("/").pop()?.replace(/^\d+_/, "") || "")
+    : "";
+
   return (
     <>
-      {showPreview && (
+      {showPreview && type !== "document" && (
         <PreviewOverlay
           title={title}
           excerpt={excerpt}
@@ -349,111 +396,175 @@ export default function PostEditor({ post }: Props) {
             <option value="article">Άρθρο</option>
             <option value="tutorial">Tutorial</option>
             <option value="scouting">Scouting</option>
+            <option value="document">Έγγραφο</option>
           </select>
         </div>
 
-        {/* Excerpt */}
-        <div>
-          <label className={labelCls}>Σύντομη Περιγραφή</label>
-          <textarea className={`${inputCls} resize-none h-20`} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Σύντομη περιγραφή..." />
-        </div>
-
-        {/* Content */}
-        <div>
-          <label className={labelCls}>Περιεχόμενο</label>
-          <RichTextEditor value={content} onChange={setContent} />
-        </div>
-
-        {/* Thumbnail upload — hidden for tutorials (auto-derived from YouTube) */}
-        {type !== "tutorial" && (
+        {/* ── Document upload zone (document type only) ── */}
+        {type === "document" && (
           <div>
-            <label className={labelCls}>Εικόνα Κεφαλίδας</label>
-            <div className="flex gap-3 items-center">
-              <input
-                className={`${inputCls} flex-1`}
-                value={thumbnailUrl}
-                onChange={(e) => setThumbnailUrl(e.target.value)}
-                placeholder="/uploads/..."
-              />
-              <label className="bg-[#1A1A1A] border border-[#333] hover:border-[#F97316] text-gray-400 hover:text-white px-4 py-3 rounded-xl text-sm cursor-pointer transition-colors whitespace-nowrap">
-                Μεταφόρτωση
+            <label className={labelCls}>Αρχείο Εγγράφου *</label>
+            {thumbnailUrl ? (
+              <div className="border border-[#333] rounded-xl p-4 flex items-center gap-4 bg-[#1A1A1A]">
+                {isDocImage(thumbnailUrl) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={thumbnailUrl} alt="preview" className="w-16 h-16 object-cover rounded-lg shrink-0" />
+                ) : (
+                  <div className="w-16 h-16 flex items-center justify-center bg-[#252525] rounded-lg shrink-0">
+                    <svg className="w-8 h-8 text-[#F97316]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                    </svg>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm font-medium truncate">{docFileName}</p>
+                  <p className="text-gray-500 text-xs mt-0.5">
+                    {isDocImage(thumbnailUrl) ? "Εικόνα" : "PDF"}
+                  </p>
+                </div>
+                <label className="shrink-0 cursor-pointer text-xs text-gray-400 hover:text-white border border-[#333] hover:border-[#F97316] px-3 py-1.5 rounded-lg transition-colors">
+                  Αντικατάσταση
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDocumentFile(f); }}
+                  />
+                </label>
+              </div>
+            ) : (
+              <label className="block border-2 border-dashed border-[#333] hover:border-[#F97316]/50 rounded-xl p-10 text-center cursor-pointer transition-colors group">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-[#252525] group-hover:bg-[#2A2A2A] flex items-center justify-center transition-colors">
+                    <svg className="w-6 h-6 text-gray-400 group-hover:text-[#F97316] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-gray-300 text-sm font-medium">Κάνε κλικ ή σύρε ένα αρχείο εδώ</p>
+                    <p className="text-gray-600 text-xs mt-1">Εικόνες και PDF, μέχρι 5MB</p>
+                  </div>
+                </div>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,application/pdf"
                   className="hidden"
-                  onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadFile(file, "thumbnail"); }}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDocumentFile(f); }}
                 />
               </label>
-            </div>
-            <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
-              Η εικόνα πρέπει να είναι ακριβώς <span className="text-gray-500 font-mono">{REQUIRED_THUMBNAIL_WIDTH} × {REQUIRED_THUMBNAIL_HEIGHT}</span> pixels (αναλογία 2:1). Προσαρμόστε την εικόνα σε αυτές τις διαστάσεις πριν τη μεταφόρτωση — π.χ. με Canva, Photoshop ή κάποιο online resizer.
-            </p>
+            )}
           </div>
         )}
 
-        {/* Cropper — shown when a thumbnail is available */}
-        {previewUrl && (
+        {/* ── Fields hidden for document type ── */}
+        {type !== "document" && (
+          <>
+            {/* Excerpt */}
             <div>
-              <p className={labelCls}>
-                Επεξεργασία Εικόνας
-                <span className="normal-case text-gray-600 tracking-normal ml-1">— σύρε για να επιλέξεις την περιοχή</span>
-              </p>
-              <Cropper
-                className="w-full rounded-xl bg-[#0A0A0A]"
-                style={{ aspectRatio: "2 / 1" }}
-                image={previewUrl}
-                aspectRatio={2}
-                cropPadding={0}
-                minZoom={0.5}
-                maxZoom={5}
-                zoom={cropZoom}
-                onCropChange={handleCropChange}
-                onZoomChange={setCropZoom}
-              >
-                <CropperDescription>Σύρε για να επιλέξεις το ορατό τμήμα της εικόνας</CropperDescription>
-                <CropperImage />
-                <CropperCropArea />
-              </Cropper>
-
-              {/* Zoom slider */}
-              <div className="mt-2 flex items-center gap-3">
-                <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607zM10.5 7.5v6m3-3h-6" />
-                </svg>
-                <input
-                  type="range"
-                  min={0.5}
-                  max={5}
-                  step={0.01}
-                  value={cropZoom}
-                  onChange={(e) => setCropZoom(parseFloat(e.target.value))}
-                  className="flex-1 accent-[#F97316] cursor-pointer"
-                />
-                <span className="text-xs text-gray-500 w-8 text-right tabular-nums">{cropZoom.toFixed(1)}×</span>
-              </div>
+              <label className={labelCls}>Σύντομη Περιγραφή</label>
+              <textarea className={`${inputCls} resize-none h-20`} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Σύντομη περιγραφή..." />
             </div>
-        )}
 
-        {/* Video (YouTube) */}
-        <div>
-          <label className={labelCls}>Βίντεο (YouTube)</label>
-          <input
-            className={inputCls}
-            value={videoUrl}
-            onChange={(e) => setVideoUrl(e.target.value)}
-            placeholder="https://www.youtube.com/watch?v=..."
-          />
-          <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
-            Ανέβασε το βίντεο στο YouTube και επικόλλησε τον σύνδεσμό του εδώ. Η άμεση μεταφόρτωση βίντεο δεν υποστηρίζεται.
-          </p>
-        </div>
+            {/* Content */}
+            <div>
+              <label className={labelCls}>Περιεχόμενο</label>
+              <RichTextEditor value={content} onChange={setContent} />
+            </div>
+
+            {/* Thumbnail upload — hidden for tutorials (auto-derived from YouTube) */}
+            {type !== "tutorial" && (
+              <div>
+                <label className={labelCls}>Εικόνα Κεφαλίδας</label>
+                <div className="flex gap-3 items-center">
+                  <input
+                    className={`${inputCls} flex-1`}
+                    value={thumbnailUrl}
+                    onChange={(e) => setThumbnailUrl(e.target.value)}
+                    placeholder="/uploads/..."
+                  />
+                  <label className="bg-[#1A1A1A] border border-[#333] hover:border-[#F97316] text-gray-400 hover:text-white px-4 py-3 rounded-xl text-sm cursor-pointer transition-colors whitespace-nowrap">
+                    Μεταφόρτωση
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadFile(file, "thumbnail"); }}
+                    />
+                  </label>
+                </div>
+                <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
+                  Η εικόνα πρέπει να είναι ακριβώς <span className="text-gray-500 font-mono">{REQUIRED_THUMBNAIL_WIDTH} × {REQUIRED_THUMBNAIL_HEIGHT}</span> pixels (αναλογία 2:1). Προσαρμόστε την εικόνα σε αυτές τις διαστάσεις πριν τη μεταφόρτωση — π.χ. με Canva, Photoshop ή κάποιο online resizer.
+                </p>
+              </div>
+            )}
+
+            {/* Cropper — shown when a thumbnail is available */}
+            {previewUrl && (
+              <div>
+                <p className={labelCls}>
+                  Επεξεργασία Εικόνας
+                  <span className="normal-case text-gray-600 tracking-normal ml-1">— σύρε για να επιλέξεις την περιοχή</span>
+                </p>
+                <Cropper
+                  className="w-full rounded-xl bg-[#0A0A0A]"
+                  style={{ aspectRatio: "2 / 1" }}
+                  image={previewUrl}
+                  aspectRatio={2}
+                  cropPadding={0}
+                  minZoom={0.5}
+                  maxZoom={5}
+                  zoom={cropZoom}
+                  onCropChange={handleCropChange}
+                  onZoomChange={setCropZoom}
+                >
+                  <CropperDescription>Σύρε για να επιλέξεις το ορατό τμήμα της εικόνας</CropperDescription>
+                  <CropperImage />
+                  <CropperCropArea />
+                </Cropper>
+
+                {/* Zoom slider */}
+                <div className="mt-2 flex items-center gap-3">
+                  <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607zM10.5 7.5v6m3-3h-6" />
+                  </svg>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={5}
+                    step={0.01}
+                    value={cropZoom}
+                    onChange={(e) => setCropZoom(parseFloat(e.target.value))}
+                    className="flex-1 accent-[#F97316] cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-500 w-8 text-right tabular-nums">{cropZoom.toFixed(1)}×</span>
+                </div>
+              </div>
+            )}
+
+            {/* Video (YouTube) */}
+            <div>
+              <label className={labelCls}>Βίντεο (YouTube)</label>
+              <input
+                className={inputCls}
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+              />
+              <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
+                Ανέβασε το βίντεο στο YouTube και επικόλλησε τον σύνδεσμό του εδώ. Η άμεση μεταφόρτωση βίντεο δεν υποστηρίζεται.
+              </p>
+            </div>
+          </>
+        )}
 
         {uploading && <p className="text-[#F97316] text-sm">Μεταφόρτωση αρχείου...</p>}
 
         {/* Toggles */}
         <div className="flex gap-8">
           <Toggle checked={published} onChange={() => setPublished(!published)} label="Δημοσιευμένο" />
-          <Toggle checked={featured} onChange={() => setFeatured(!featured)} label="Επιλεγμένο" />
+          {type !== "document" && (
+            <Toggle checked={featured} onChange={() => setFeatured(!featured)} label="Επιλεγμένο" />
+          )}
         </div>
 
         {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -467,17 +578,19 @@ export default function PostEditor({ post }: Props) {
           >
             {saving ? "Αποθήκευση..." : isEdit ? "Ενημέρωση" : "Δημιουργία"}
           </button>
-          <button
-            onClick={() => setShowPreview(true)}
-            disabled={saving || uploading}
-            className="flex items-center gap-2 bg-[#1A1A1A] border border-[#333] hover:border-[#F97316] text-gray-400 hover:text-white disabled:opacity-60 px-6 py-3 rounded-xl transition-colors cursor-pointer text-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-            </svg>
-            Προεπισκόπηση
-          </button>
+          {type !== "document" && (
+            <button
+              onClick={() => setShowPreview(true)}
+              disabled={saving || uploading}
+              className="flex items-center gap-2 bg-[#1A1A1A] border border-[#333] hover:border-[#F97316] text-gray-400 hover:text-white disabled:opacity-60 px-6 py-3 rounded-xl transition-colors cursor-pointer text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+              Προεπισκόπηση
+            </button>
+          )}
           <button
             onClick={() => router.push("/admin/posts")}
             className="bg-[#1A1A1A] border border-[#333] text-gray-400 hover:text-white px-6 py-3 rounded-xl transition-colors cursor-pointer text-sm"

@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 
 const isVideo = (url: string) => /\.(mp4|webm|mov|avi)$/i.test(url);
+const isPdf = (url: string) => /\.pdf(\?|$)/i.test(url);
 
 export default function AdminMediaLibrary({ initialFiles }: { initialFiles: string[] }) {
   const [files, setFiles] = useState<string[]>(initialFiles);
@@ -73,7 +74,7 @@ export default function AdminMediaLibrary({ initialFiles }: { initialFiles: stri
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
           </svg>
           {uploading ? "Μεταφόρτωση..." : "Μεταφόρτωση Αρχείου"}
-          <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+          <input ref={inputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleUpload} />
         </label>
         {error && <p className="mt-3 text-red-400 text-sm">{error}</p>}
       </div>
@@ -91,6 +92,13 @@ export default function AdminMediaLibrary({ initialFiles }: { initialFiles: stri
                   <svg className="w-8 h-8 text-[#F97316]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
                   </svg>
+                </div>
+              ) : isPdf(url) ? (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-[#1A1A1A] gap-1">
+                  <svg className="w-8 h-8 text-[#F97316]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                  </svg>
+                  <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">PDF</span>
                 </div>
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element

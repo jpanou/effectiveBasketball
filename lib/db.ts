@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { supabase } from "./supabase";
 
-export type PostType = "article" | "tutorial" | "scouting";
+export type PostType = "article" | "tutorial" | "scouting" | "document";
 export type SortBy = "newest" | "highest_rated" | "most_viewed";
 
 export interface Post {
@@ -111,6 +111,7 @@ export async function getFeaturedPosts(): Promise<Post[]> {
     .select("*, ratings(score)")
     .eq("featured", 1)
     .eq("published", 1)
+    .neq("type", "document")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data as PostWithRatings[]).map(attachAvgRating);
