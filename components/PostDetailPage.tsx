@@ -53,20 +53,23 @@ export default function PostDetailPage({ post }: { post: Post }) {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="border border-[#222] rounded-2xl p-6 md:p-8 mb-8"
         >
           <span className="bg-[#F97316] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
             {post.type}
           </span>
 
           <h1
-            className="text-4xl md:text-6xl text-white mt-4 mb-4 leading-tight"
+            className="text-4xl md:text-6xl text-white mt-4 mb-3 leading-tight"
             style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
           >
             {post.title}
           </h1>
 
-          <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+          {post.excerpt && (
+            <p className="text-gray-400 text-base leading-relaxed mb-4">{post.excerpt}</p>
+          )}
+
+          <div className="flex items-center gap-4 text-sm text-gray-500 mb-8">
             <span>{new Date(post.created_at).toLocaleDateString("el-GR", { year: "numeric", month: "long", day: "numeric" })}</span>
             <span className="flex items-center gap-1">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -84,10 +87,6 @@ export default function PostDetailPage({ post }: { post: Post }) {
               </span>
             )}
           </div>
-
-          {post.excerpt && (
-            <p className="text-gray-400 text-base leading-relaxed border-t border-[#222] pt-4">{post.excerpt}</p>
-          )}
         </motion.div>
 
         {/* Thumbnail */}
@@ -133,7 +132,7 @@ export default function PostDetailPage({ post }: { post: Post }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
-          className="prose-eb border border-[#222] rounded-2xl p-6 md:p-8"
+          className="prose-eb"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
