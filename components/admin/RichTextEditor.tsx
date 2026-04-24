@@ -1,11 +1,13 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface Props {
   value: string;
   onChange: (html: string) => void;
 }
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 function ToolbarBtn({ onClick, title, children, className = "" }: { onClick: () => void; title: string; children: React.ReactNode; className?: string }) {
   return (
@@ -22,8 +24,10 @@ function ToolbarBtn({ onClick, title, children, className = "" }: { onClick: () 
 
 export default function RichTextEditor({ value, onChange }: Props) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
-  // Set initial HTML only on mount — never again (would reset cursor)
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.innerHTML = value || "";
@@ -39,6 +43,43 @@ export default function RichTextEditor({ value, onChange }: Props) {
 
   function sync() {
     if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }
+
+  async function handleImageFile(file: File) {
+    setUploadError("");
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Μόνο αρχεία εικόνας επιτρέπονται.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      setUploadError(`Η εικόνα πρέπει να είναι μικρότερη από 5MB. (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      return;
+    }
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        setUploadError(data.error || "Η μεταφόρτωση απέτυχε");
+        return;
+      }
+      if (data.url) {
+        editorRef.current?.focus();
+        document.execCommand(
+          "insertHTML",
+          false,
+          `<img src="${data.url}" style="max-width:100%;border-radius:8px;margin:12px 0;display:block;" />`
+        );
+        sync();
+      }
+    } catch {
+      setUploadError("Σφάλμα δικτύου κατά τη μεταφόρτωση.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
   return (
@@ -95,6 +136,33 @@ export default function RichTextEditor({ value, onChange }: Props) {
 
         <span className="w-px h-5 bg-[#333] mx-1" />
 
+        {/* Image upload */}
+        <ToolbarBtn
+          onClick={() => fileInputRef.current?.click()}
+          title="Εισαγωγή εικόνας (max 5MB)"
+          className={uploading ? "opacity-50 pointer-events-none" : ""}
+        >
+          {uploading ? (
+            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909M18 1.5H6A4.5 4.5 0 0 0 1.5 6v12A4.5 4.5 0 0 0 6 22.5h12a4.5 4.5 0 0 0 4.5-4.5V6A4.5 4.5 0 0 0 18 1.5Zm-3.75 7.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+            </svg>
+          )}
+        </ToolbarBtn>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageFile(f); }}
+        />
+
+        <span className="w-px h-5 bg-[#333] mx-1" />
+
         <ToolbarBtn onClick={() => exec("removeFormat")} title="Clear formatting">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 17.94 6M10.5 10.5 12 9l4.5 4.5-1.5 1.5m-4.5-4.5L6 18" />
@@ -125,9 +193,15 @@ export default function RichTextEditor({ value, onChange }: Props) {
           [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mb-2 [&_h2]:mt-4
           [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-white [&_h3]:mb-1 [&_h3]:mt-3
           [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2
-          [&_li]:mb-0.5 [&_strong]:text-white [&_em]:italic [&_u]:underline [&_a]:text-[#F97316] [&_a]:underline [&_a]:cursor-pointer"
+          [&_li]:mb-0.5 [&_strong]:text-white [&_em]:italic [&_u]:underline
+          [&_a]:text-[#F97316] [&_a]:underline [&_a]:cursor-pointer
+          [&_img]:max-w-full [&_img]:rounded-lg [&_img]:my-2"
         data-placeholder="Γράψε το περιεχόμενο εδώ..."
       />
+
+      {uploadError && (
+        <p className="px-4 py-2 text-xs text-red-400 bg-[#1A1A1A] border-t border-[#2A2A2A]">{uploadError}</p>
+      )}
 
       <style>{`
         [contenteditable]:empty:before {

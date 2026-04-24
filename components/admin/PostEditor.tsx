@@ -14,6 +14,12 @@ interface Props {
 const REQUIRED_THUMBNAIL_WIDTH = 1600;
 const REQUIRED_THUMBNAIL_HEIGHT = 800;
 
+const typeLabel: Record<string, string> = {
+  article: "Άρθρο",
+  tutorial: "Tutorial",
+  scouting: "Scouting",
+};
+
 function getYouTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
   return m ? m[1] : null;
@@ -39,11 +45,131 @@ function slugify(str: string) {
   return str
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .trim();
+}
+
+function VideoEmbed({ url, title }: { url: string; title: string }) {
+  const ytId = getYouTubeId(url);
+  const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}` : null;
+  return embedUrl ? (
+    <iframe
+      src={embedUrl}
+      className="w-full aspect-video rounded-2xl"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowFullScreen
+      title={title}
+    />
+  ) : (
+    <video controls className="w-full rounded-2xl" src={url}>Ο browser σας δεν υποστηρίζει video.</video>
+  );
+}
+
+function PreviewOverlay({
+  title, excerpt, content, type, thumbnailUrl, thumbnailPosition, videoUrl,
+  onClose,
+}: {
+  title: string; excerpt: string; content: string;
+  type: "article" | "tutorial" | "scouting";
+  thumbnailUrl: string; thumbnailPosition: string; videoUrl: string;
+  onClose: () => void;
+}) {
+  const dateStr = new Date().toLocaleDateString("el-GR", { year: "numeric", month: "long", day: "numeric" });
+  const ytId = getYouTubeId(videoUrl);
+  const effectiveThumbnail = type === "tutorial"
+    ? (ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : "")
+    : thumbnailUrl;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#0A0A0A]/95 overflow-y-auto">
+      {/* Header bar */}
+      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3 bg-[#0A0A0A] border-b border-[#222]">
+        <span className="text-xs text-gray-500 uppercase tracking-widest">Προεπισκόπηση</span>
+        <button
+          onClick={onClose}
+          className="flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors cursor-pointer"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+          Κλείσιμο
+        </button>
+      </div>
+
+      {/* Post content — mirrors public PostDetailPage layout */}
+      <div className="max-w-3xl mx-auto px-6 pt-12 pb-20">
+        {/* Badge */}
+        <span className="bg-[#F97316] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
+          {typeLabel[type] || type}
+        </span>
+
+        {/* Title */}
+        <h1
+          className="text-4xl md:text-6xl text-white mt-4 mb-3 leading-tight"
+          style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
+        >
+          {title || <span className="text-gray-600">Χωρίς τίτλο</span>}
+        </h1>
+
+        {/* Excerpt */}
+        {excerpt && (
+          <p className="text-gray-400 text-base leading-relaxed mb-4">{excerpt}</p>
+        )}
+
+        {/* Date / views / rating */}
+        <div className="flex items-center gap-4 text-sm text-gray-500 mb-8">
+          <span>{dateStr}</span>
+          <span className="flex items-center gap-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+            0 προβολές
+          </span>
+        </div>
+
+        {/* Thumbnail — articles and scouting only */}
+        {effectiveThumbnail && type !== "tutorial" && (
+          <div className="mb-8 rounded-2xl overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={effectiveThumbnail}
+              alt={title}
+              className="w-full h-64 md:h-96 object-cover"
+              style={{ objectPosition: thumbnailPosition || "center center" }}
+            />
+          </div>
+        )}
+
+        {/* Video before content — tutorials only */}
+        {videoUrl && type === "tutorial" && (
+          <div className="mb-8 rounded-2xl overflow-hidden bg-black">
+            <VideoEmbed url={videoUrl} title={title} />
+          </div>
+        )}
+
+        {/* Content */}
+        {content ? (
+          <div
+            className="prose-eb"
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        ) : (
+          <p className="text-gray-600 italic">Χωρίς περιεχόμενο ακόμα...</p>
+        )}
+
+        {/* Video after content — articles and scouting */}
+        {videoUrl && type !== "tutorial" && (
+          <div className="mt-8 rounded-2xl overflow-hidden bg-black">
+            <VideoEmbed url={videoUrl} title={title} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function PostEditor({ post }: Props) {
@@ -63,6 +189,7 @@ export default function PostEditor({ post }: Props) {
   const naturalSizeRef = useRef<{ w: number; h: number } | null>(null);
   const firstCropFireRef = useRef(true);
   const [videoUrl, setVideoUrl] = useState(post?.video_url || "");
+  const [showPreview, setShowPreview] = useState(false);
 
   const ytId = getYouTubeId(videoUrl);
   const previewUrl = type === "tutorial"
@@ -79,6 +206,13 @@ export default function PostEditor({ post }: Props) {
   useEffect(() => {
     firstCropFireRef.current = true;
   }, [previewUrl]);
+
+  // Lock body scroll when preview is open
+  useEffect(() => {
+    document.body.style.overflow = showPreview ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [showPreview]);
+
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -174,158 +308,184 @@ export default function PostEditor({ post }: Props) {
   const labelCls = "block text-xs text-gray-500 uppercase tracking-wide mb-1.5";
 
   return (
-    <div className="max-w-3xl space-y-6">
-      {/* Title */}
-      <div>
-        <label className={labelCls}>Τίτλος *</label>
-        <input className={inputCls} value={title} onChange={(e) => handleTitleChange(e.target.value)} placeholder="Τίτλος ανάρτησης" />
-      </div>
+    <>
+      {showPreview && (
+        <PreviewOverlay
+          title={title}
+          excerpt={excerpt}
+          content={content}
+          type={type}
+          thumbnailUrl={thumbnailUrl}
+          thumbnailPosition={thumbnailPosition}
+          videoUrl={videoUrl}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
 
-      {/* Slug */}
-      <div>
-        <label className={labelCls}>Slug *</label>
-        <input className={inputCls} value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="url-friendly-slug" />
-        <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
-          Το slug είναι το τμήμα της URL που αναγνωρίζει μοναδικά αυτή την ανάρτηση — π.χ. <span className="text-gray-500 font-mono">αμυντικη-πιεση</span> δημιουργεί τη διεύθυνση <span className="text-gray-500 font-mono">/articles/αμυντικη-πιεση</span>. Συμπληρώνεται αυτόματα από τον τίτλο.
-        </p>
-      </div>
-
-      {/* Type */}
-      <div>
-        <label className={labelCls}>Τύπος *</label>
-        <select
-          className={inputCls}
-          value={type}
-          onChange={(e) => setType(e.target.value as typeof type)}
-        >
-          <option value="article">Άρθρο</option>
-          <option value="tutorial">Tutorial</option>
-          <option value="scouting">Scouting</option>
-        </select>
-      </div>
-
-      {/* Excerpt */}
-      <div>
-        <label className={labelCls}>Σύντομη Περιγραφή</label>
-        <textarea className={`${inputCls} resize-none h-20`} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Σύντομη περιγραφή..." />
-      </div>
-
-      {/* Content */}
-      <div>
-        <label className={labelCls}>Περιεχόμενο</label>
-        <RichTextEditor value={content} onChange={setContent} />
-      </div>
-
-      {/* Thumbnail upload — hidden for tutorials (auto-derived from YouTube) */}
-      {type !== "tutorial" && (
+      <div className="max-w-3xl space-y-6">
+        {/* Title */}
         <div>
-          <label className={labelCls}>Εικόνα Κεφαλίδας</label>
-          <div className="flex gap-3 items-center">
-            <input
-              className={`${inputCls} flex-1`}
-              value={thumbnailUrl}
-              onChange={(e) => setThumbnailUrl(e.target.value)}
-              placeholder="/uploads/..."
-            />
-            <label className="bg-[#1A1A1A] border border-[#333] hover:border-[#F97316] text-gray-400 hover:text-white px-4 py-3 rounded-xl text-sm cursor-pointer transition-colors whitespace-nowrap">
-              Μεταφόρτωση
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadFile(file, "thumbnail"); }}
-              />
-            </label>
-          </div>
+          <label className={labelCls}>Τίτλος *</label>
+          <input className={inputCls} value={title} onChange={(e) => handleTitleChange(e.target.value)} placeholder="Τίτλος ανάρτησης" />
+        </div>
+
+        {/* Slug */}
+        <div>
+          <label className={labelCls}>Slug *</label>
+          <input className={inputCls} value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="url-friendly-slug" />
           <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
-            Η εικόνα πρέπει να είναι ακριβώς <span className="text-gray-500 font-mono">{REQUIRED_THUMBNAIL_WIDTH} × {REQUIRED_THUMBNAIL_HEIGHT}</span> pixels (αναλογία 2:1). Προσαρμόστε την εικόνα σε αυτές τις διαστάσεις πριν τη μεταφόρτωση — π.χ. με Canva, Photoshop ή κάποιο online resizer.
+            Το slug είναι το τμήμα της URL που αναγνωρίζει μοναδικά αυτή την ανάρτηση — π.χ. <span className="text-gray-500 font-mono">αμυντικη-πιεση</span> δημιουργεί τη διεύθυνση <span className="text-gray-500 font-mono">/articles/αμυντικη-πιεση</span>. Συμπληρώνεται αυτόματα από τον τίτλο.
           </p>
         </div>
-      )}
 
-      {/* Cropper — shown when a thumbnail is available */}
-      {previewUrl && (
+        {/* Type */}
+        <div>
+          <label className={labelCls}>Τύπος *</label>
+          <select
+            className={inputCls}
+            value={type}
+            onChange={(e) => setType(e.target.value as typeof type)}
+          >
+            <option value="article">Άρθρο</option>
+            <option value="tutorial">Tutorial</option>
+            <option value="scouting">Scouting</option>
+          </select>
+        </div>
+
+        {/* Excerpt */}
+        <div>
+          <label className={labelCls}>Σύντομη Περιγραφή</label>
+          <textarea className={`${inputCls} resize-none h-20`} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Σύντομη περιγραφή..." />
+        </div>
+
+        {/* Content */}
+        <div>
+          <label className={labelCls}>Περιεχόμενο</label>
+          <RichTextEditor value={content} onChange={setContent} />
+        </div>
+
+        {/* Thumbnail upload — hidden for tutorials (auto-derived from YouTube) */}
+        {type !== "tutorial" && (
           <div>
-            <p className={labelCls}>
-              Επεξεργασία Εικόνας
-              <span className="normal-case text-gray-600 tracking-normal ml-1">— σύρε για να επιλέξεις την περιοχή</span>
-            </p>
-            <Cropper
-              className="w-full rounded-xl bg-[#0A0A0A]"
-              style={{ aspectRatio: "2 / 1" }}
-              image={previewUrl}
-              aspectRatio={2}
-              cropPadding={0}
-              minZoom={0.5}
-              maxZoom={5}
-              zoom={cropZoom}
-              onCropChange={handleCropChange}
-              onZoomChange={setCropZoom}
-            >
-              <CropperDescription>Σύρε για να επιλέξεις το ορατό τμήμα της εικόνας</CropperDescription>
-              <CropperImage />
-              <CropperCropArea />
-            </Cropper>
-
-            {/* Zoom slider */}
-            <div className="mt-2 flex items-center gap-3">
-              <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607zM10.5 7.5v6m3-3h-6" />
-              </svg>
+            <label className={labelCls}>Εικόνα Κεφαλίδας</label>
+            <div className="flex gap-3 items-center">
               <input
-                type="range"
-                min={0.5}
-                max={5}
-                step={0.01}
-                value={cropZoom}
-                onChange={(e) => setCropZoom(parseFloat(e.target.value))}
-                className="flex-1 accent-[#F97316] cursor-pointer"
+                className={`${inputCls} flex-1`}
+                value={thumbnailUrl}
+                onChange={(e) => setThumbnailUrl(e.target.value)}
+                placeholder="/uploads/..."
               />
-              <span className="text-xs text-gray-500 w-8 text-right tabular-nums">{cropZoom.toFixed(1)}×</span>
+              <label className="bg-[#1A1A1A] border border-[#333] hover:border-[#F97316] text-gray-400 hover:text-white px-4 py-3 rounded-xl text-sm cursor-pointer transition-colors whitespace-nowrap">
+                Μεταφόρτωση
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => { const file = e.target.files?.[0]; if (file) uploadFile(file, "thumbnail"); }}
+                />
+              </label>
             </div>
+            <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
+              Η εικόνα πρέπει να είναι ακριβώς <span className="text-gray-500 font-mono">{REQUIRED_THUMBNAIL_WIDTH} × {REQUIRED_THUMBNAIL_HEIGHT}</span> pixels (αναλογία 2:1). Προσαρμόστε την εικόνα σε αυτές τις διαστάσεις πριν τη μεταφόρτωση — π.χ. με Canva, Photoshop ή κάποιο online resizer.
+            </p>
           </div>
-      )}
+        )}
 
-      {/* Video (YouTube) */}
-      <div>
-        <label className={labelCls}>Βίντεο (YouTube)</label>
-        <input
-          className={inputCls}
-          value={videoUrl}
-          onChange={(e) => setVideoUrl(e.target.value)}
-          placeholder="https://www.youtube.com/watch?v=..."
-        />
-        <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
-          Ανέβασε το βίντεο στο YouTube και επικόλλησε τον σύνδεσμό του εδώ. Η άμεση μεταφόρτωση βίντεο δεν υποστηρίζεται.
-        </p>
+        {/* Cropper — shown when a thumbnail is available */}
+        {previewUrl && (
+            <div>
+              <p className={labelCls}>
+                Επεξεργασία Εικόνας
+                <span className="normal-case text-gray-600 tracking-normal ml-1">— σύρε για να επιλέξεις την περιοχή</span>
+              </p>
+              <Cropper
+                className="w-full rounded-xl bg-[#0A0A0A]"
+                style={{ aspectRatio: "2 / 1" }}
+                image={previewUrl}
+                aspectRatio={2}
+                cropPadding={0}
+                minZoom={0.5}
+                maxZoom={5}
+                zoom={cropZoom}
+                onCropChange={handleCropChange}
+                onZoomChange={setCropZoom}
+              >
+                <CropperDescription>Σύρε για να επιλέξεις το ορατό τμήμα της εικόνας</CropperDescription>
+                <CropperImage />
+                <CropperCropArea />
+              </Cropper>
+
+              {/* Zoom slider */}
+              <div className="mt-2 flex items-center gap-3">
+                <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607zM10.5 7.5v6m3-3h-6" />
+                </svg>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={5}
+                  step={0.01}
+                  value={cropZoom}
+                  onChange={(e) => setCropZoom(parseFloat(e.target.value))}
+                  className="flex-1 accent-[#F97316] cursor-pointer"
+                />
+                <span className="text-xs text-gray-500 w-8 text-right tabular-nums">{cropZoom.toFixed(1)}×</span>
+              </div>
+            </div>
+        )}
+
+        {/* Video (YouTube) */}
+        <div>
+          <label className={labelCls}>Βίντεο (YouTube)</label>
+          <input
+            className={inputCls}
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="https://www.youtube.com/watch?v=..."
+          />
+          <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
+            Ανέβασε το βίντεο στο YouTube και επικόλλησε τον σύνδεσμό του εδώ. Η άμεση μεταφόρτωση βίντεο δεν υποστηρίζεται.
+          </p>
+        </div>
+
+        {uploading && <p className="text-[#F97316] text-sm">Μεταφόρτωση αρχείου...</p>}
+
+        {/* Toggles */}
+        <div className="flex gap-8">
+          <Toggle checked={published} onChange={() => setPublished(!published)} label="Δημοσιευμένο" />
+          <Toggle checked={featured} onChange={() => setFeatured(!featured)} label="Επιλεγμένο" />
+        </div>
+
+        {error && <p className="text-red-400 text-sm">{error}</p>}
+
+        {/* Actions */}
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving || uploading}
+            className="bg-[#F97316] hover:bg-[#EA6D0E] disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl transition-colors cursor-pointer text-sm"
+          >
+            {saving ? "Αποθήκευση..." : isEdit ? "Ενημέρωση" : "Δημιουργία"}
+          </button>
+          <button
+            onClick={() => setShowPreview(true)}
+            disabled={saving || uploading}
+            className="flex items-center gap-2 bg-[#1A1A1A] border border-[#333] hover:border-[#F97316] text-gray-400 hover:text-white disabled:opacity-60 px-6 py-3 rounded-xl transition-colors cursor-pointer text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+            Προεπισκόπηση
+          </button>
+          <button
+            onClick={() => router.push("/admin/posts")}
+            className="bg-[#1A1A1A] border border-[#333] text-gray-400 hover:text-white px-6 py-3 rounded-xl transition-colors cursor-pointer text-sm"
+          >
+            Ακύρωση
+          </button>
+        </div>
       </div>
-
-      {uploading && <p className="text-[#F97316] text-sm">Μεταφόρτωση αρχείου...</p>}
-
-      {/* Toggles */}
-      <div className="flex gap-8">
-        <Toggle checked={published} onChange={() => setPublished(!published)} label="Δημοσιευμένο" />
-        <Toggle checked={featured} onChange={() => setFeatured(!featured)} label="Επιλεγμένο" />
-      </div>
-
-      {error && <p className="text-red-400 text-sm">{error}</p>}
-
-      {/* Actions */}
-      <div className="flex gap-3 pt-2">
-        <button
-          onClick={handleSave}
-          disabled={saving || uploading}
-          className="bg-[#F97316] hover:bg-[#EA6D0E] disabled:opacity-60 text-white font-semibold px-6 py-3 rounded-xl transition-colors cursor-pointer text-sm"
-        >
-          {saving ? "Αποθήκευση..." : isEdit ? "Ενημέρωση" : "Δημιουργία"}
-        </button>
-        <button
-          onClick={() => router.push("/admin/posts")}
-          className="bg-[#1A1A1A] border border-[#333] text-gray-400 hover:text-white px-6 py-3 rounded-xl transition-colors cursor-pointer text-sm"
-        >
-          Ακύρωση
-        </button>
-      </div>
-    </div>
+    </>
   );
 }
