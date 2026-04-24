@@ -89,8 +89,8 @@ export default function PostDetailPage({ post }: { post: Post }) {
           </div>
         </motion.div>
 
-        {/* Thumbnail */}
-        {post.thumbnail_url && (
+        {/* Thumbnail — articles and scouting only */}
+        {post.thumbnail_url && post.type !== "tutorial" && (
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -107,8 +107,8 @@ export default function PostDetailPage({ post }: { post: Post }) {
           </motion.div>
         )}
 
-        {/* Video — before content for non-scouting, after content for scouting */}
-        {post.video_url && post.type !== "scouting" && (
+        {/* Video — before content for tutorials only */}
+        {post.video_url && post.type === "tutorial" && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -136,8 +136,8 @@ export default function PostDetailPage({ post }: { post: Post }) {
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
-        {/* Video — after content for scouting */}
-        {post.video_url && post.type === "scouting" && (
+        {/* Video — after content for articles and scouting */}
+        {post.video_url && post.type !== "tutorial" && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

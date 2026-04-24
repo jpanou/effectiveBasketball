@@ -80,10 +80,7 @@ export default function ContentTypesSection() {
               </h3>
               <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
               <div className="mt-6 flex items-center gap-2 text-[#F97316] text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <span>Δες περισσότερα</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                </svg>
+                <span className="underline-offset-2 hover:underline cursor-pointer">Δες περισσότερα</span>
               </div>
             </Link>
           </motion.div>
