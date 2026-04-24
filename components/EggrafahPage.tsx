@@ -4,10 +4,11 @@ import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import type { Post } from "@/lib/db";
 
-type SortOption = "newest" | "most_viewed";
+type SortOption = "newest" | "highest_rated" | "most_viewed";
 
 const sortOptions: { value: SortOption; label: string }[] = [
   { value: "newest", label: "Νεότερα" },
+  { value: "highest_rated", label: "Υψηλότερη Βαθμολογία" },
   { value: "most_viewed", label: "Περισσότερες Προβολές" },
 ];
 

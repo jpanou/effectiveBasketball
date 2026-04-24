@@ -193,6 +193,7 @@ export default function PostEditor({ post }: Props) {
   const [cropZoom, setCropZoom] = useState(1);
   const naturalSizeRef = useRef<{ w: number; h: number } | null>(null);
   const firstCropFireRef = useRef(true);
+  const docFileInputRef = useRef<HTMLInputElement | null>(null);
   const [videoUrl, setVideoUrl] = useState(post?.video_url || "");
   const [showPreview, setShowPreview] = useState(false);
 
@@ -300,6 +301,7 @@ export default function PostEditor({ post }: Props) {
       setError(err instanceof Error ? err.message : "Σφάλμα δικτύου");
     } finally {
       setUploading(false);
+      if (docFileInputRef.current) docFileInputRef.current.value = "";
     }
   }
 
@@ -425,6 +427,7 @@ export default function PostEditor({ post }: Props) {
                 <label className="shrink-0 cursor-pointer text-xs text-gray-400 hover:text-white border border-[#333] hover:border-[#F97316] px-3 py-1.5 rounded-lg transition-colors">
                   Αντικατάσταση
                   <input
+                    ref={docFileInputRef}
                     type="file"
                     accept="image/*,application/pdf"
                     className="hidden"
@@ -441,11 +444,12 @@ export default function PostEditor({ post }: Props) {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-gray-300 text-sm font-medium">Κάνε κλικ ή σύρε ένα αρχείο εδώ</p>
+                    <p className="text-gray-300 text-sm font-medium">Κάνε κλικ για να επιλέξεις αρχείο</p>
                     <p className="text-gray-600 text-xs mt-1">Εικόνες και PDF, μέχρι 5MB</p>
                   </div>
                 </div>
                 <input
+                  ref={docFileInputRef}
                   type="file"
                   accept="image/*,application/pdf"
                   className="hidden"
