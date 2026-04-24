@@ -11,9 +11,28 @@ interface Props {
   post?: Post;
 }
 
+const REQUIRED_THUMBNAIL_WIDTH = 1600;
+const REQUIRED_THUMBNAIL_HEIGHT = 800;
+
 function getYouTubeId(url: string): string | null {
   const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
   return m ? m[1] : null;
+}
+
+function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new window.Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("read_failed"));
+    };
+    img.src = url;
+  });
 }
 
 function slugify(str: string) {
@@ -85,6 +104,20 @@ export default function PostEditor({ post }: Props) {
   async function uploadFile(file: File, field: "thumbnail" | "video") {
     setUploading(true);
     setError("");
+    if (field === "thumbnail") {
+      try {
+        const { width, height } = await readImageDimensions(file);
+        if (width !== REQUIRED_THUMBNAIL_WIDTH || height !== REQUIRED_THUMBNAIL_HEIGHT) {
+          setError(`Η εικόνα πρέπει να είναι ακριβώς ${REQUIRED_THUMBNAIL_WIDTH} × ${REQUIRED_THUMBNAIL_HEIGHT} pixels. Η εικόνα σας είναι ${width} × ${height} pixels.`);
+          setUploading(false);
+          return;
+        }
+      } catch {
+        setError("Δεν ήταν δυνατή η ανάγνωση της εικόνας.");
+        setUploading(false);
+        return;
+      }
+    }
     const fd = new FormData();
     fd.append("file", file);
     try {
@@ -204,6 +237,9 @@ export default function PostEditor({ post }: Props) {
               />
             </label>
           </div>
+          <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
+            Η εικόνα πρέπει να είναι ακριβώς <span className="text-gray-500 font-mono">{REQUIRED_THUMBNAIL_WIDTH} × {REQUIRED_THUMBNAIL_HEIGHT}</span> pixels (αναλογία 2:1). Προσαρμόστε την εικόνα σε αυτές τις διαστάσεις πριν τη μεταφόρτωση — π.χ. με Canva, Photoshop ή κάποιο online resizer.
+          </p>
         </div>
       )}
 
