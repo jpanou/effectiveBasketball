@@ -57,8 +57,8 @@ export default function PostCard({ post }: { post: Post }) {
           {post.excerpt && (
             <>
               <p className="text-gray-500 text-sm leading-relaxed line-clamp-1">{post.excerpt}</p>
-              <span className="text-[#F97316] text-xs font-medium mt-0.5 inline-block">
-                See more →
+              <span className="text-[#F97316] text-xs font-medium mt-0.5 inline-block underline-offset-2 hover:underline cursor-pointer">
+                See more
               </span>
             </>
           )}

@@ -51,6 +51,25 @@ export default function RichTextEditor({ value, onChange }: Props) {
 
         <span className="w-px h-5 bg-[#333] mx-1" />
 
+        <ToolbarBtn
+          onClick={() => {
+            const url = window.prompt("Εισάγετε URL:");
+            if (url) exec("createLink", url);
+          }}
+          title="Εισαγωγή συνδέσμου"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+          </svg>
+        </ToolbarBtn>
+        <ToolbarBtn onClick={() => exec("unlink")} title="Αφαίρεση συνδέσμου">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.181 8.68a4.503 4.503 0 0 1 1.903 6.405m-9.768-2.782L3.56 14.06a4.5 4.5 0 0 0 6.364 6.365l3-3a4.5 4.5 0 0 0-6.364-6.365Zm9.256-8.43-.165.165a4.5 4.5 0 0 1 .386 6.175M16.5 7.5l-3.646 3.646M3.75 3.75l16.5 16.5" />
+          </svg>
+        </ToolbarBtn>
+
+        <span className="w-px h-5 bg-[#333] mx-1" />
+
         <ToolbarBtn onClick={() => exec("formatBlock", "h2")} title="Heading 2">
           <span className="text-xs font-bold">H2</span>
         </ToolbarBtn>
@@ -106,7 +125,7 @@ export default function RichTextEditor({ value, onChange }: Props) {
           [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mb-2 [&_h2]:mt-4
           [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-white [&_h3]:mb-1 [&_h3]:mt-3
           [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2
-          [&_li]:mb-0.5 [&_strong]:text-white [&_em]:italic [&_u]:underline"
+          [&_li]:mb-0.5 [&_strong]:text-white [&_em]:italic [&_u]:underline [&_a]:text-[#F97316] [&_a]:underline [&_a]:cursor-pointer"
         data-placeholder="Γράψε το περιεχόμενο εδώ..."
       />
 

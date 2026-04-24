@@ -53,6 +53,7 @@ export default function PostDetailPage({ post }: { post: Post }) {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
+          className="border border-[#222] rounded-2xl p-6 md:p-8 mb-8"
         >
           <span className="bg-[#F97316] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
             {post.type}
@@ -65,7 +66,7 @@ export default function PostDetailPage({ post }: { post: Post }) {
             {post.title}
           </h1>
 
-          <div className="flex items-center gap-4 text-sm text-gray-500 mb-8">
+          <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
             <span>{new Date(post.created_at).toLocaleDateString("el-GR", { year: "numeric", month: "long", day: "numeric" })}</span>
             <span className="flex items-center gap-1">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -83,6 +84,10 @@ export default function PostDetailPage({ post }: { post: Post }) {
               </span>
             )}
           </div>
+
+          {post.excerpt && (
+            <p className="text-gray-400 text-base leading-relaxed border-t border-[#222] pt-4">{post.excerpt}</p>
+          )}
         </motion.div>
 
         {/* Thumbnail */}
@@ -128,7 +133,7 @@ export default function PostDetailPage({ post }: { post: Post }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15 }}
-          className="prose-eb"
+          className="prose-eb border border-[#222] rounded-2xl p-6 md:p-8"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
