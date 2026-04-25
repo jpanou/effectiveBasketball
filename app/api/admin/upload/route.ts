@@ -21,15 +21,38 @@ export async function POST(req: NextRequest) {
 
     const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
     const bytes = await file.arrayBuffer();
+    const contentType = file.type || "application/octet-stream";
 
     const { error } = await supabase.storage
       .from(BUCKET)
-      .upload(safeName, bytes, { contentType: file.type, upsert: false });
+      .upload(safeName, bytes, { contentType, upsert: false });
 
     if (error) {
       console.error("[upload] supabase error:", error);
-      const msg = error.message || (error as { error?: string }).error || "Supabase upload failed";
-      return NextResponse.json({ error: msg }, { status: 500 });
+      const errAny = error as Record<string, unknown>;
+      const msg =
+        (typeof errAny.message === "string" && errAny.message && errAny.message !== "error"
+          ? errAny.message
+          : null) ||
+        (typeof errAny.error === "string" && errAny.error ? errAny.error : null) ||
+        (() => {
+          try { return JSON.stringify(error); } catch { return "Supabase upload failed"; }
+        })();
+      return NextResponse.json(
+        {
+          error: msg,
+          supabase: {
+            name: errAny.name,
+            message: errAny.message,
+            statusCode: errAny.statusCode,
+            status: errAny.status,
+            bucket: BUCKET,
+            url_present: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+            service_key_present: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+          },
+        },
+        { status: 500 },
+      );
     }
 
     const { data } = supabase.storage.from(BUCKET).getPublicUrl(safeName);

@@ -45,14 +45,19 @@ export default function AdminMediaLibrary({ initialFiles }: { initialFiles: stri
     fd.append("file", file);
     try {
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const data = await res.json();
+      const text = await res.text();
+      let data: { url?: string; error?: string; supabase?: unknown } = {};
+      try { data = JSON.parse(text); } catch { /* non-JSON response */ }
       if (!res.ok) {
-        setError(data.error || "Η μεταφόρτωση απέτυχε");
+        console.error("[upload] failed", { status: res.status, body: text });
+        const msg = data.error || text || "Η μεταφόρτωση απέτυχε";
+        setError(`${msg} (HTTP ${res.status})`);
         return;
       }
-      if (data.url) setFiles((prev) => [data.url, ...prev]);
+      if (data.url) setFiles((prev) => [data.url!, ...prev]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Σφάλμα δικτύου");
+      console.error("[upload] network error", err);
+      setError(err instanceof Error ? `${err.message} (network)` : "Σφάλμα δικτύου");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
