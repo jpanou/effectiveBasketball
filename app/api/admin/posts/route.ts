@@ -30,7 +30,12 @@ export async function POST(req: NextRequest) {
     revalidatePath("/");
     return NextResponse.json({ success: true });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "error";
+    console.error("[posts POST] error:", JSON.stringify(e));
+    const msg =
+      (e instanceof Error ? e.message : null) ||
+      (e && typeof e === "object" && "message" in e ? String((e as Record<string, unknown>).message) : null) ||
+      (e && typeof e === "object" && "error" in e ? String((e as Record<string, unknown>).error) : null) ||
+      JSON.stringify(e);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
