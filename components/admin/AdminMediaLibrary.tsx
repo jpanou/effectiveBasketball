@@ -39,25 +39,32 @@ export default function AdminMediaLibrary({ initialFiles }: { initialFiles: stri
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.type.startsWith("video/")) {
+      setError("Τα βίντεο δεν υποστηρίζονται. Χρησιμοποίησε YouTube.");
+      return;
+    }
     setUploading(true);
     setError(null);
-    const fd = new FormData();
-    fd.append("file", file);
     try {
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const text = await res.text();
-      let data: { url?: string; error?: string; supabase?: unknown } = {};
-      try { data = JSON.parse(text); } catch { /* non-JSON response */ }
-      if (!res.ok) {
-        console.error("[upload] failed", { status: res.status, body: text });
-        const msg = data.error || text || "Η μεταφόρτωση απέτυχε";
-        setError(`${msg} (HTTP ${res.status})`);
-        return;
+      const urlRes = await fetch(`/api/admin/upload-url?name=${encodeURIComponent(file.name)}`);
+      const urlData = await urlRes.json().catch(() => ({}));
+      if (!urlRes.ok) throw new Error(urlData.error || `HTTP ${urlRes.status}`);
+      const { signedUrl, publicUrl } = urlData as { signedUrl: string; publicUrl: string };
+
+      const uploadRes = await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+      });
+      if (!uploadRes.ok) {
+        const body = await uploadRes.text().catch(() => "");
+        let detail = body;
+        try { detail = JSON.parse(body)?.message || JSON.parse(body)?.error || body; } catch { /* raw */ }
+        throw new Error(`Supabase: ${detail || uploadRes.status}`);
       }
-      if (data.url) setFiles((prev) => [data.url!, ...prev]);
+      setFiles((prev) => [publicUrl, ...prev]);
     } catch (err) {
-      console.error("[upload] network error", err);
-      setError(err instanceof Error ? `${err.message} (network)` : "Σφάλμα δικτύου");
+      setError(err instanceof Error ? err.message : "Σφάλμα μεταφόρτωσης");
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";

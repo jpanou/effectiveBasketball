@@ -241,6 +241,26 @@ export default function PostEditor({ post }: Props) {
     setThumbnailPosition(`${clamp(focalX)}% ${clamp(focalY)}%`);
   }
 
+  async function uploadToSupabase(file: File): Promise<string> {
+    const urlRes = await fetch(`/api/admin/upload-url?name=${encodeURIComponent(file.name)}`);
+    const urlData = await urlRes.json().catch(() => ({}));
+    if (!urlRes.ok) throw new Error(urlData.error || `HTTP ${urlRes.status}`);
+    const { signedUrl, publicUrl } = urlData as { signedUrl: string; publicUrl: string };
+
+    const uploadRes = await fetch(signedUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type || "application/octet-stream" },
+    });
+    if (!uploadRes.ok) {
+      const body = await uploadRes.text().catch(() => "");
+      let detail = body;
+      try { detail = JSON.parse(body)?.message || JSON.parse(body)?.error || body; } catch { /* raw text */ }
+      throw new Error(`Supabase: ${detail || uploadRes.status}`);
+    }
+    return publicUrl;
+  }
+
   async function uploadFile(file: File, field: "thumbnail" | "video") {
     setUploading(true);
     setError("");
@@ -258,60 +278,33 @@ export default function PostEditor({ post }: Props) {
         return;
       }
     }
-    const fd = new FormData();
-    fd.append("file", file);
     try {
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const text = await res.text();
-      let data: { url?: string; error?: string; supabase?: unknown } = {};
-      try { data = JSON.parse(text); } catch { /* non-JSON response */ }
-      if (!res.ok) {
-        console.error("[upload] failed", { status: res.status, body: text });
-        const msg = data.error || text || "Η μεταφόρτωση απέτυχε";
-        setError(`${msg} (HTTP ${res.status})`);
-        return;
-      }
-      if (data.url) {
-        if (field === "thumbnail") {
-          setThumbnailUrl(data.url);
-          setThumbnailPosition("50% 50%");
-        } else {
-          setVideoUrl(data.url);
-        }
+      const url = await uploadToSupabase(file);
+      if (field === "thumbnail") {
+        setThumbnailUrl(url);
+        setThumbnailPosition("50% 50%");
+      } else {
+        setVideoUrl(url);
       }
     } catch (err) {
-      console.error("[upload] network error", err);
-      setError(err instanceof Error ? `${err.message} (network)` : "Σφάλμα δικτύου");
+      setError(err instanceof Error ? err.message : "Σφάλμα μεταφόρτωσης");
     } finally {
       setUploading(false);
     }
   }
 
   async function uploadDocumentFile(file: File) {
-    const MAX_DOC_SIZE = 5 * 1024 * 1024;
-    if (file.size > MAX_DOC_SIZE) {
+    if (file.size > 5 * 1024 * 1024) {
       setError(`Το αρχείο πρέπει να είναι μικρότερο από 5MB. (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
       return;
     }
     setUploading(true);
     setError("");
-    const fd = new FormData();
-    fd.append("file", file);
     try {
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const text = await res.text();
-      let data: { url?: string; error?: string } = {};
-      try { data = JSON.parse(text); } catch { /* non-JSON response */ }
-      if (!res.ok) {
-        console.error("[upload] failed", { status: res.status, body: text });
-        const msg = data.error || text || "Η μεταφόρτωση απέτυχε";
-        setError(`${msg} (HTTP ${res.status})`);
-        return;
-      }
-      if (data.url) setThumbnailUrl(data.url);
+      const url = await uploadToSupabase(file);
+      setThumbnailUrl(url);
     } catch (err) {
-      console.error("[upload] network error", err);
-      setError(err instanceof Error ? `${err.message} (network)` : "Σφάλμα δικτύου");
+      setError(err instanceof Error ? err.message : "Σφάλμα μεταφόρτωσης");
     } finally {
       setUploading(false);
       if (docFileInputRef.current) docFileInputRef.current.value = "";
