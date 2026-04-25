@@ -187,7 +187,6 @@ export default function PostEditor({ post }: Props) {
   const [content, setContent] = useState(post?.content || "");
   const [type, setType] = useState<"article" | "tutorial" | "scouting" | "document">(post?.type || "article");
   const [published, setPublished] = useState(post ? !!post.published : true);
-  const [featured, setFeatured] = useState(!!post?.featured);
   const [thumbnailUrl, setThumbnailUrl] = useState(post?.thumbnail_url || "");
   const [thumbnailPosition, setThumbnailPosition] = useState(post?.thumbnail_position || "50% 50%");
   const [cropZoom, setCropZoom] = useState(1);
@@ -330,7 +329,7 @@ export default function PostEditor({ post }: Props) {
       content: type === "document" ? "" : content,
       type,
       published,
-      featured: type === "document" ? false : featured,
+      featured: 0,
       thumbnail_url: effectiveThumbnail,
       thumbnail_position: type === "document" ? "50% 50%" : thumbnailPosition,
       video_url: type === "document" ? "" : videoUrl,
@@ -572,9 +571,6 @@ export default function PostEditor({ post }: Props) {
         {/* Toggles */}
         <div className="flex gap-8">
           <Toggle checked={published} onChange={() => setPublished(!published)} label="Δημοσιευμένο" />
-          {type !== "document" && (
-            <Toggle checked={featured} onChange={() => setFeatured(!featured)} label="Επιλεγμένο" />
-          )}
         </div>
 
         {error && <p className="text-red-400 text-sm">{error}</p>}

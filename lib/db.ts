@@ -117,6 +117,18 @@ export async function getFeaturedPosts(): Promise<Post[]> {
   return (data as PostWithRatings[]).map(attachAvgRating);
 }
 
+export async function getLatestPosts(limit = 6): Promise<Post[]> {
+  const { data, error } = await supabase
+    .from("posts")
+    .select("*, ratings(score)")
+    .eq("published", 1)
+    .neq("type", "document")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data as PostWithRatings[]).map(attachAvgRating);
+}
+
 export async function createPost(
   data: Omit<Post, "id" | "views" | "created_at" | "avg_rating">
 ): Promise<void> {
