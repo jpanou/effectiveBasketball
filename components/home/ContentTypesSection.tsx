@@ -103,22 +103,22 @@ export default function ContentTypesSection() {
 
         {/* Embla viewport */}
         <div ref={emblaRef} className="overflow-hidden">
-          <div className="-ml-6 flex">
+          <div className="-ml-6 flex items-stretch">
             {types.map((item, i) => (
               <div
                 key={item.href}
-                className="pl-6 min-w-0 shrink-0 grow-0 basis-full sm:basis-1/2 lg:basis-1/3 h-full"
+                className="pl-6 min-w-0 shrink-0 grow-0 basis-full sm:basis-1/2 lg:basis-1/3 flex flex-col"
               >
                 <motion.div
                   initial={{ opacity: 0, y: 40 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.15 }}
-                  className="h-full"
+                  className="flex-1 flex flex-col"
                 >
                   <Link
                     href={item.href}
-                    className="group flex flex-col h-full bg-[#111] border border-[#222] rounded-2xl p-8 hover:border-[#F97316]/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] transition-all duration-300 cursor-pointer"
+                    className="group flex flex-col flex-1 bg-[#111] border border-[#222] rounded-2xl p-8 hover:border-[#F97316]/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] transition-all duration-300 cursor-pointer"
                   >
                     <div className="text-[#F97316] mb-5 group-hover:scale-110 transition-transform duration-300 inline-block">
                       {item.icon}

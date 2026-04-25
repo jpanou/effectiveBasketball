@@ -86,10 +86,10 @@ export default function Footer() {
   return (
     <footer className="border-t border-[#1A1A1A] bg-[#0A0A0A]">
       <div className="mx-auto max-w-7xl px-6 py-16">
-        <div className="flex flex-col gap-12 lg:flex-row lg:gap-20">
+        <div className="flex flex-col gap-10 lg:flex-row lg:items-start">
 
           {/* Left: brand, description, socials */}
-          <div className="flex flex-col gap-6 lg:max-w-xs">
+          <div className="flex flex-col gap-6 lg:w-2/5">
             <Link href="/" className="flex items-center gap-3">
               <Image
                 src="/assets/basketball-coach-logo-transparent.png"
@@ -127,7 +127,7 @@ export default function Footer() {
           </div>
 
           {/* Right: pages + contact columns */}
-          <div className="grid grid-cols-2 gap-10 lg:flex-1 lg:justify-end sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-8 lg:w-3/5">
             {/* Pages */}
             <div>
               <h3
