@@ -127,11 +127,6 @@ export default function AdminPostsTable({ initialPosts }: { initialPosts: Post[]
                 onChange={() => toggleField(post.id, "published", post.published)}
                 label="Δημοσιευμένο"
               />
-              <Toggle
-                checked={!!post.featured}
-                onChange={() => toggleField(post.id, "featured", post.featured)}
-                label="Επιλεγμένο"
-              />
             </div>
 
             {/* Footer */}

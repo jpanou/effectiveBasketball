@@ -107,7 +107,7 @@ export default function ContentTypesSection() {
             {types.map((item, i) => (
               <div
                 key={item.href}
-                className="pl-6 min-w-0 shrink-0 grow-0 w-[280px] sm:w-[320px]"
+                className="pl-6 min-w-0 shrink-0 grow-0 basis-full sm:basis-1/2 lg:basis-1/3"
               >
                 <motion.div
                   initial={{ opacity: 0, y: 40 }}
