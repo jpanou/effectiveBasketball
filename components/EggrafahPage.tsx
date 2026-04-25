@@ -18,6 +18,10 @@ function isImageUrl(url: string) {
 function isPdfUrl(url: string) {
   return /\.pdf(\?|$)/i.test(url);
 }
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
 
 function PdfIcon({ className }: { className?: string }) {
   return (
@@ -28,7 +32,8 @@ function PdfIcon({ className }: { className?: string }) {
 }
 
 function DocumentCard({ post, onClick }: { post: Post; onClick: () => void }) {
-  const isImg = post.thumbnail_url ? isImageUrl(post.thumbnail_url) : false;
+  const isPdfIcon = post.thumbnail_url === "/assets/pdf-thumbnail.svg";
+  const isImg = !isPdfIcon && post.thumbnail_url ? isImageUrl(post.thumbnail_url) : false;
   const isPdf = post.thumbnail_url ? isPdfUrl(post.thumbnail_url) : false;
   const d = new Date(post.created_at);
   const dateStr = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
@@ -40,7 +45,15 @@ function DocumentCard({ post, onClick }: { post: Post; onClick: () => void }) {
     >
       {/* Preview area */}
       <div className="relative h-48 bg-[#1A1A1A] overflow-hidden flex items-center justify-center">
-        {isImg ? (
+        {isPdfIcon ? (
+          // New-format PDF: show the icon centred with padding
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/assets/pdf-thumbnail.svg"
+            alt="PDF"
+            className="h-28 w-auto object-contain group-hover:scale-110 transition-transform duration-300"
+          />
+        ) : isImg ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={post.thumbnail_url}
@@ -98,8 +111,13 @@ function DocumentCard({ post, onClick }: { post: Post; onClick: () => void }) {
 }
 
 function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
-  const isPdf = post.thumbnail_url ? isPdfUrl(post.thumbnail_url) : false;
-  const isImg = post.thumbnail_url ? isImageUrl(post.thumbnail_url) : false;
+  // New format: video_url holds the actual content (PDF URL or YouTube URL)
+  // Legacy format: thumbnail_url holds the content (PDF URL or image URL)
+  const ytId = getYouTubeId(post.video_url || "");
+  const isVideoPdf = !ytId && post.video_url ? isPdfUrl(post.video_url) : false;
+  // Legacy fallback
+  const isThumbnailPdf = !post.video_url && post.thumbnail_url ? isPdfUrl(post.thumbnail_url) : false;
+  const isThumbnailImg = !post.video_url && post.thumbnail_url ? isImageUrl(post.thumbnail_url) : false;
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -144,14 +162,33 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
             {post.title}
           </h1>
 
-          {isPdf ? (
+          {ytId ? (
+            // Video document — embed YouTube
+            <iframe
+              src={`https://www.youtube.com/embed/${ytId}`}
+              className="w-full aspect-video rounded-2xl border border-[#222]"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={post.title}
+            />
+          ) : isVideoPdf ? (
+            // New format PDF document — video_url holds the PDF
+            <iframe
+              src={post.video_url}
+              className="w-full rounded-2xl border border-[#222]"
+              style={{ height: "80vh" }}
+              title={post.title}
+            />
+          ) : isThumbnailPdf ? (
+            // Legacy PDF stored in thumbnail_url
             <iframe
               src={post.thumbnail_url}
               className="w-full rounded-2xl border border-[#222]"
               style={{ height: "80vh" }}
               title={post.title}
             />
-          ) : isImg ? (
+          ) : isThumbnailImg ? (
+            // Legacy image stored in thumbnail_url (also handles new image format)
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={post.thumbnail_url}

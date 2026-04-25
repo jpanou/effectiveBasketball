@@ -26,8 +26,16 @@ function getYouTubeId(url: string): string | null {
   return m ? m[1] : null;
 }
 
-function isDocImage(url: string) {
-  return /\.(jpg|jpeg|png|gif|webp|svg|avif)(\?|$)/i.test(url);
+function isPdfUrl(url: string) {
+  return /\.pdf(\?|$)/i.test(url);
+}
+
+function detectDocFileType(post?: Post): "pdf" | "image" | "video" {
+  if (!post || post.type !== "document") return "pdf";
+  if (getYouTubeId(post.video_url || "")) return "video";
+  if (isPdfUrl(post.video_url || "") || isPdfUrl(post.thumbnail_url || "")) return "pdf";
+  if (post.thumbnail_url) return "image";
+  return "pdf";
 }
 
 function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
@@ -194,6 +202,7 @@ export default function PostEditor({ post }: Props) {
   const firstCropFireRef = useRef(true);
   const docFileInputRef = useRef<HTMLInputElement | null>(null);
   const [videoUrl, setVideoUrl] = useState(post?.video_url || "");
+  const [docFileType, setDocFileType] = useState<"pdf" | "image" | "video">(detectDocFileType(post));
   const [showPreview, setShowPreview] = useState(false);
 
   const ytId = getYouTubeId(videoUrl);
@@ -241,11 +250,13 @@ export default function PostEditor({ post }: Props) {
   }
 
   async function uploadToSupabase(file: File): Promise<string> {
+    // Step 1: get a signed upload URL from the backend
     const urlRes = await fetch(`/api/admin/upload-url?name=${encodeURIComponent(file.name)}`);
     const urlData = await urlRes.json().catch(() => ({}));
     if (!urlRes.ok) throw new Error(urlData.error || `HTTP ${urlRes.status}`);
-    const { signedUrl, publicUrl } = urlData as { signedUrl: string; publicUrl: string };
+    const { signedUrl, path, publicUrl } = urlData as { signedUrl: string; path: string; publicUrl: string };
 
+    // Step 2: PUT file bytes directly to Supabase (bypasses Vercel completely)
     const uploadRes = await fetch(signedUrl, {
       method: "PUT",
       body: file,
@@ -255,9 +266,18 @@ export default function PostEditor({ post }: Props) {
       const body = await uploadRes.text().catch(() => "");
       let detail = body;
       try { detail = JSON.parse(body)?.message || JSON.parse(body)?.error || body; } catch { /* raw text */ }
-      throw new Error(`Supabase: ${detail || uploadRes.status}`);
+      throw new Error(`Upload failed: ${detail || uploadRes.status}`);
     }
-    return publicUrl;
+
+    // Step 3: ask backend to verify the file actually landed in storage
+    const confirmRes = await fetch("/api/admin/confirm-upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path, publicUrl }),
+    });
+    const confirmData = await confirmRes.json().catch(() => ({}));
+    if (!confirmRes.ok) throw new Error(confirmData.error || "Confirm failed");
+    return confirmData.publicUrl || publicUrl;
   }
 
   async function uploadFile(file: File, field: "thumbnail" | "video") {
@@ -293,15 +313,22 @@ export default function PostEditor({ post }: Props) {
   }
 
   async function uploadDocumentFile(file: File) {
-    if (file.size > 5 * 1024 * 1024) {
-      setError(`Το αρχείο πρέπει να είναι μικρότερο από 5MB. (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+    const maxMb = docFileType === "pdf" ? 10 : 5;
+    if (file.size > maxMb * 1024 * 1024) {
+      setError(`Το αρχείο πρέπει να είναι μικρότερο από ${maxMb}MB. (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
       return;
     }
     setUploading(true);
     setError("");
     try {
       const url = await uploadToSupabase(file);
-      setThumbnailUrl(url);
+      if (docFileType === "pdf") {
+        setVideoUrl(url);
+        setThumbnailUrl("/assets/pdf-thumbnail.svg");
+      } else {
+        setThumbnailUrl(url);
+        setVideoUrl("");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Σφάλμα μεταφόρτωσης");
     } finally {
@@ -312,13 +339,24 @@ export default function PostEditor({ post }: Props) {
 
   async function handleSave() {
     if (!title || !slug || !type) { setError("Συμπληρώστε όλα τα υποχρεωτικά πεδία"); return; }
-    if (type === "document" && !thumbnailUrl) {
-      setError("Παρακαλώ μεταφορτώστε ένα αρχείο εγγράφου");
-      return;
+    if (type === "document") {
+      if (docFileType === "pdf" && !videoUrl) {
+        setError("Παρακαλώ μεταφορτώστε ένα PDF αρχείο");
+        return;
+      }
+      if (docFileType === "image" && !thumbnailUrl) {
+        setError("Παρακαλώ μεταφορτώστε μια εικόνα");
+        return;
+      }
+      if (docFileType === "video" && !getYouTubeId(videoUrl)) {
+        setError("Παρακαλώ εισάγετε έγκυρο σύνδεσμο YouTube");
+        return;
+      }
     }
     setSaving(true);
     setError("");
-    const youtubeId = type === "tutorial" ? getYouTubeId(videoUrl) : null;
+    const isYouTubePost = type === "tutorial" || (type === "document" && docFileType === "video");
+    const youtubeId = isYouTubePost ? getYouTubeId(videoUrl) : null;
     const effectiveThumbnail = youtubeId
       ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`
       : thumbnailUrl;
@@ -332,7 +370,7 @@ export default function PostEditor({ post }: Props) {
       featured: 0,
       thumbnail_url: effectiveThumbnail,
       thumbnail_position: type === "document" ? "50% 50%" : thumbnailPosition,
-      video_url: type === "document" ? "" : videoUrl,
+      video_url: videoUrl,
     };
     try {
       let res;
@@ -356,10 +394,6 @@ export default function PostEditor({ post }: Props) {
   const inputCls = "w-full bg-[#1A1A1A] border border-[#333] rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#F97316] transition-colors";
   const labelCls = "block text-xs text-gray-500 uppercase tracking-wide mb-1.5";
 
-  // Derive display name from document file URL
-  const docFileName = thumbnailUrl
-    ? decodeURIComponent(thumbnailUrl.split("/").pop()?.replace(/^\d+_/, "") || "")
-    : "";
 
   return (
     <>
@@ -409,58 +443,148 @@ export default function PostEditor({ post }: Props) {
 
         {/* ── Document upload zone (document type only) ── */}
         {type === "document" && (
-          <div>
-            <label className={labelCls}>Αρχείο Εγγράφου *</label>
-            {thumbnailUrl ? (
-              <div className="border border-[#333] rounded-xl p-4 flex items-center gap-4 bg-[#1A1A1A]">
-                {isDocImage(thumbnailUrl) ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={thumbnailUrl} alt="preview" className="w-16 h-16 object-cover rounded-lg shrink-0" />
+          <div className="space-y-4">
+            {/* Sub-type selector */}
+            <div>
+              <label className={labelCls}>Τύπος Αρχείου *</label>
+              <select
+                className={inputCls}
+                value={docFileType}
+                onChange={(e) => {
+                  const t = e.target.value as "pdf" | "image" | "video";
+                  setDocFileType(t);
+                  setVideoUrl("");
+                  setThumbnailUrl("");
+                }}
+              >
+                <option value="pdf">PDF</option>
+                <option value="image">Εικόνα</option>
+                <option value="video">Βίντεο (YouTube)</option>
+              </select>
+            </div>
+
+            {/* PDF upload */}
+            {docFileType === "pdf" && (
+              <div>
+                <label className={labelCls}>Αρχείο PDF *</label>
+                {videoUrl ? (
+                  <div className="border border-[#333] rounded-xl p-4 flex items-center gap-4 bg-[#1A1A1A]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/assets/pdf-thumbnail.svg" alt="PDF" className="w-12 h-14 object-contain shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">
+                        {decodeURIComponent(videoUrl.split("/").pop()?.replace(/^\d+_/, "") || "")}
+                      </p>
+                      <p className="text-gray-500 text-xs mt-0.5">PDF</p>
+                    </div>
+                    <label className="shrink-0 cursor-pointer text-xs text-gray-400 hover:text-white border border-[#333] hover:border-[#F97316] px-3 py-1.5 rounded-lg transition-colors">
+                      Αντικατάσταση
+                      <input
+                        ref={docFileInputRef}
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDocumentFile(f); }}
+                      />
+                    </label>
+                  </div>
                 ) : (
-                  <div className="w-16 h-16 flex items-center justify-center bg-[#252525] rounded-lg shrink-0">
-                    <svg className="w-8 h-8 text-[#F97316]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                    </svg>
+                  <label className="block border-2 border-dashed border-[#333] hover:border-[#F97316]/50 rounded-xl p-10 text-center cursor-pointer transition-colors group">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-[#252525] group-hover:bg-[#2A2A2A] flex items-center justify-center transition-colors">
+                        <svg className="w-6 h-6 text-gray-400 group-hover:text-[#F97316] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-gray-300 text-sm font-medium">Κάνε κλικ για να επιλέξεις PDF</p>
+                        <p className="text-gray-600 text-xs mt-1">PDF, μέχρι 10MB</p>
+                      </div>
+                    </div>
+                    <input
+                      ref={docFileInputRef}
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDocumentFile(f); }}
+                    />
+                  </label>
+                )}
+              </div>
+            )}
+
+            {/* Image upload */}
+            {docFileType === "image" && (
+              <div>
+                <label className={labelCls}>Εικόνα *</label>
+                {thumbnailUrl ? (
+                  <div className="border border-[#333] rounded-xl p-4 flex items-center gap-4 bg-[#1A1A1A]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={thumbnailUrl} alt="preview" className="w-16 h-16 object-cover rounded-lg shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">
+                        {decodeURIComponent(thumbnailUrl.split("/").pop()?.replace(/^\d+_/, "") || "")}
+                      </p>
+                      <p className="text-gray-500 text-xs mt-0.5">Εικόνα</p>
+                    </div>
+                    <label className="shrink-0 cursor-pointer text-xs text-gray-400 hover:text-white border border-[#333] hover:border-[#F97316] px-3 py-1.5 rounded-lg transition-colors">
+                      Αντικατάσταση
+                      <input
+                        ref={docFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDocumentFile(f); }}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <label className="block border-2 border-dashed border-[#333] hover:border-[#F97316]/50 rounded-xl p-10 text-center cursor-pointer transition-colors group">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-[#252525] group-hover:bg-[#2A2A2A] flex items-center justify-center transition-colors">
+                        <svg className="w-6 h-6 text-gray-400 group-hover:text-[#F97316] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-gray-300 text-sm font-medium">Κάνε κλικ για να επιλέξεις εικόνα</p>
+                        <p className="text-gray-600 text-xs mt-1">PNG, JPG, WEBP, μέχρι 5MB</p>
+                      </div>
+                    </div>
+                    <input
+                      ref={docFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDocumentFile(f); }}
+                    />
+                  </label>
+                )}
+              </div>
+            )}
+
+            {/* Video (YouTube) */}
+            {docFileType === "video" && (
+              <div>
+                <label className={labelCls}>Σύνδεσμος YouTube *</label>
+                <input
+                  className={inputCls}
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+                {getYouTubeId(videoUrl) && (
+                  <div className="mt-3 rounded-xl overflow-hidden border border-[#222]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`https://img.youtube.com/vi/${getYouTubeId(videoUrl)}/maxresdefault.jpg`}
+                      alt="YouTube thumbnail"
+                      className="w-full h-40 object-cover"
+                    />
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{docFileName}</p>
-                  <p className="text-gray-500 text-xs mt-0.5">
-                    {isDocImage(thumbnailUrl) ? "Εικόνα" : "PDF"}
-                  </p>
-                </div>
-                <label className="shrink-0 cursor-pointer text-xs text-gray-400 hover:text-white border border-[#333] hover:border-[#F97316] px-3 py-1.5 rounded-lg transition-colors">
-                  Αντικατάσταση
-                  <input
-                    ref={docFileInputRef}
-                    type="file"
-                    accept="image/*,application/pdf"
-                    className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDocumentFile(f); }}
-                  />
-                </label>
+                <p className="mt-1.5 text-xs text-gray-600">Επικόλλησε σύνδεσμο YouTube βίντεο</p>
               </div>
-            ) : (
-              <label className="block border-2 border-dashed border-[#333] hover:border-[#F97316]/50 rounded-xl p-10 text-center cursor-pointer transition-colors group">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#252525] group-hover:bg-[#2A2A2A] flex items-center justify-center transition-colors">
-                    <svg className="w-6 h-6 text-gray-400 group-hover:text-[#F97316] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-gray-300 text-sm font-medium">Κάνε κλικ για να επιλέξεις αρχείο</p>
-                    <p className="text-gray-600 text-xs mt-1">Εικόνες και PDF, μέχρι 5MB</p>
-                  </div>
-                </div>
-                <input
-                  ref={docFileInputRef}
-                  type="file"
-                  accept="image/*,application/pdf"
-                  className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDocumentFile(f); }}
-                />
-              </label>
             )}
           </div>
         )}
