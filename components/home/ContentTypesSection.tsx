@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
-import { useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
+import useEmblaCarousel from "embla-carousel-react";
 
 const types = [
   {
@@ -48,14 +49,26 @@ const types = [
 ];
 
 export default function ContentTypesSection() {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start" });
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
 
-  function scroll(direction: "left" | "right") {
-    const el = scrollRef.current;
-    if (!el) return;
-    const amount = el.clientWidth * 0.8;
-    el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
-  }
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setCanScrollPrev(emblaApi.canScrollPrev());
+    setCanScrollNext(emblaApi.canScrollNext());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+    return () => { emblaApi.off("select", onSelect); };
+  }, [emblaApi, onSelect]);
+
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
   return (
     <section className="py-20 px-6 max-w-7xl mx-auto">
@@ -76,63 +89,67 @@ export default function ContentTypesSection() {
       </motion.div>
 
       <div className="relative group/carousel">
-        {/* Left scroll button */}
+        {/* Prev button */}
         <button
-          onClick={() => scroll("left")}
-          aria-label="Scroll left"
-          className="hidden md:flex absolute top-1/2 -translate-y-1/2 -left-4 z-10 w-10 h-10 rounded-full bg-[#111]/80 backdrop-blur-sm border border-[#333] items-center justify-center text-white opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 hover:border-[#F97316] hover:text-[#F97316] cursor-pointer"
+          onClick={scrollPrev}
+          disabled={!canScrollPrev}
+          aria-label="Προηγούμενο"
+          className="hidden md:flex absolute top-1/2 -translate-y-1/2 -left-5 z-10 w-10 h-10 rounded-full bg-[#111]/80 backdrop-blur-sm border border-[#333] items-center justify-center text-white opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 transition-all duration-300 hover:border-[#F97316] hover:text-[#F97316] cursor-pointer"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
           </svg>
         </button>
 
-        {/* Right scroll button */}
+        {/* Embla viewport */}
+        <div ref={emblaRef} className="overflow-hidden">
+          <div className="-ml-6 flex">
+            {types.map((item, i) => (
+              <div
+                key={item.href}
+                className="pl-6 min-w-0 shrink-0 grow-0 w-[280px] sm:w-[320px]"
+              >
+                <motion.div
+                  initial={{ opacity: 0, y: 40 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: i * 0.15 }}
+                >
+                  <Link
+                    href={item.href}
+                    className="group flex flex-col h-full bg-[#111] border border-[#222] rounded-2xl p-8 hover:border-[#F97316]/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] transition-all duration-300 cursor-pointer"
+                  >
+                    <div className="text-[#F97316] mb-5 group-hover:scale-110 transition-transform duration-300 inline-block">
+                      {item.icon}
+                    </div>
+                    <h3
+                      className="text-2xl md:text-3xl text-white mb-3 group-hover:text-[#F97316] transition-colors duration-200"
+                      style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
+                    >
+                      {item.label}
+                    </h3>
+                    <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                    <div className="mt-6 flex items-center gap-2 text-[#F97316] text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <span className="underline-offset-2 hover:underline cursor-pointer">Δες περισσότερα</span>
+                    </div>
+                  </Link>
+                </motion.div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Next button */}
         <button
-          onClick={() => scroll("right")}
-          aria-label="Scroll right"
-          className="hidden md:flex absolute top-1/2 -translate-y-1/2 -right-4 z-10 w-10 h-10 rounded-full bg-[#111]/80 backdrop-blur-sm border border-[#333] items-center justify-center text-white opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 hover:border-[#F97316] hover:text-[#F97316] cursor-pointer"
+          onClick={scrollNext}
+          disabled={!canScrollNext}
+          aria-label="Επόμενο"
+          className="hidden md:flex absolute top-1/2 -translate-y-1/2 -right-5 z-10 w-10 h-10 rounded-full bg-[#111]/80 backdrop-blur-sm border border-[#333] items-center justify-center text-white opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 transition-all duration-300 hover:border-[#F97316] hover:text-[#F97316] cursor-pointer"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
           </svg>
         </button>
-
-        {/* Scrollable container */}
-        <div
-          ref={scrollRef}
-          className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {types.map((item, i) => (
-            <motion.div
-              key={item.href}
-              className="snap-start shrink-0 w-[280px] sm:w-[320px]"
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.15 }}
-            >
-              <Link
-                href={item.href}
-                className="group flex flex-col h-full bg-[#111] border border-[#222] rounded-2xl p-8 hover:border-[#F97316]/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] transition-all duration-300 cursor-pointer"
-              >
-                <div className="text-[#F97316] mb-5 group-hover:scale-110 transition-transform duration-300 inline-block">
-                  {item.icon}
-                </div>
-                <h3
-                  className="text-2xl md:text-3xl text-white mb-3 group-hover:text-[#F97316] transition-colors duration-200"
-                  style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
-                >
-                  {item.label}
-                </h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
-                <div className="mt-6 flex items-center gap-2 text-[#F97316] text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <span className="underline-offset-2 hover:underline cursor-pointer">Δες περισσότερα</span>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
       </div>
     </section>
   );
