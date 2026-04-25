@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("[upload] supabase error:", error);
-      const errAny = error as Record<string, unknown>;
+      const errAny = error as unknown as Record<string, unknown>;
       const msg =
         (typeof errAny.message === "string" && errAny.message && errAny.message !== "error"
           ? errAny.message
