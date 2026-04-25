@@ -107,13 +107,14 @@ export default function ContentTypesSection() {
             {types.map((item, i) => (
               <div
                 key={item.href}
-                className="pl-6 min-w-0 shrink-0 grow-0 basis-full sm:basis-1/2 lg:basis-1/3"
+                className="pl-6 min-w-0 shrink-0 grow-0 basis-full sm:basis-1/2 lg:basis-1/3 h-full"
               >
                 <motion.div
                   initial={{ opacity: 0, y: 40 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: i * 0.15 }}
+                  className="h-full"
                 >
                   <Link
                     href={item.href}
