@@ -127,7 +127,7 @@ export default function Footer() {
           </div>
 
           {/* Right: pages + contact columns */}
-          <div className="grid grid-cols-2 gap-8 lg:gap-20 lg:w-3/5 lg:justify-end">
+          <div className="grid grid-cols-2 gap-8 lg:flex lg:gap-24 lg:w-3/5 lg:justify-end">
             {/* Pages */}
             <div>
               <h3
