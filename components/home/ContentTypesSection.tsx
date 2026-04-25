@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "motion/react";
+import { useRef } from "react";
 
 const types = [
   {
@@ -34,9 +35,28 @@ const types = [
       </svg>
     ),
   },
+  {
+    href: "/eggrafa",
+    label: "Έγγραφα",
+    desc: "Φωτογραφίες, έγγραφα και αρχεία προς μελέτη",
+    icon: (
+      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+      </svg>
+    ),
+  },
 ];
 
 export default function ContentTypesSection() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  function scroll(direction: "left" | "right") {
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = el.clientWidth * 0.8;
+    el.scrollBy({ left: direction === "left" ? -amount : amount, behavior: "smooth" });
+  }
+
   return (
     <section className="py-20 px-6 max-w-7xl mx-auto">
       <motion.div
@@ -55,36 +75,64 @@ export default function ContentTypesSection() {
         <div className="w-16 h-0.5 bg-[#F97316] mx-auto" />
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {types.map((item, i) => (
-          <motion.div
-            key={item.href}
-            className="h-full"
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: i * 0.15 }}
-          >
-            <Link
-              href={item.href}
-              className="group flex flex-col h-full bg-[#111] border border-[#222] rounded-2xl p-8 hover:border-[#F97316]/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] transition-all duration-300 cursor-pointer"
+      <div className="relative group/carousel">
+        {/* Left scroll button */}
+        <button
+          onClick={() => scroll("left")}
+          aria-label="Scroll left"
+          className="hidden md:flex absolute top-1/2 -translate-y-1/2 -left-4 z-10 w-10 h-10 rounded-full bg-[#111]/80 backdrop-blur-sm border border-[#333] items-center justify-center text-white opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 hover:border-[#F97316] hover:text-[#F97316] cursor-pointer"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+
+        {/* Right scroll button */}
+        <button
+          onClick={() => scroll("right")}
+          aria-label="Scroll right"
+          className="hidden md:flex absolute top-1/2 -translate-y-1/2 -right-4 z-10 w-10 h-10 rounded-full bg-[#111]/80 backdrop-blur-sm border border-[#333] items-center justify-center text-white opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 hover:border-[#F97316] hover:text-[#F97316] cursor-pointer"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+
+        {/* Scrollable container */}
+        <div
+          ref={scrollRef}
+          className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {types.map((item, i) => (
+            <motion.div
+              key={item.href}
+              className="snap-start shrink-0 w-[280px] sm:w-[320px]"
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: i * 0.15 }}
             >
-              <div className="text-[#F97316] mb-5 group-hover:scale-110 transition-transform duration-300 inline-block">
-                {item.icon}
-              </div>
-              <h3
-                className="text-2xl md:text-3xl text-white mb-3 group-hover:text-[#F97316] transition-colors duration-200"
-                style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
+              <Link
+                href={item.href}
+                className="group flex flex-col h-full bg-[#111] border border-[#222] rounded-2xl p-8 hover:border-[#F97316]/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.15)] transition-all duration-300 cursor-pointer"
               >
-                {item.label}
-              </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
-              <div className="mt-6 flex items-center gap-2 text-[#F97316] text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <span className="underline-offset-2 hover:underline cursor-pointer">Δες περισσότερα</span>
-              </div>
-            </Link>
-          </motion.div>
-        ))}
+                <div className="text-[#F97316] mb-5 group-hover:scale-110 transition-transform duration-300 inline-block">
+                  {item.icon}
+                </div>
+                <h3
+                  className="text-2xl md:text-3xl text-white mb-3 group-hover:text-[#F97316] transition-colors duration-200"
+                  style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
+                >
+                  {item.label}
+                </h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                <div className="mt-6 flex items-center gap-2 text-[#F97316] text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <span className="underline-offset-2 hover:underline cursor-pointer">Δες περισσότερα</span>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );

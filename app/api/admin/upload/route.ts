@@ -5,27 +5,40 @@ import { supabase } from "@/lib/supabase";
 const BUCKET = "uploads";
 
 export async function POST(req: NextRequest) {
-  const session = await getAdminSession();
-  if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  try {
+    const session = await getAdminSession();
+    if (!session) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const formData = await req.formData();
-  const file = formData.get("file") as File | null;
-  if (!file) return NextResponse.json({ error: "no_file" }, { status: 400 });
-  if (file.type.startsWith("video/")) return NextResponse.json({ error: "Τα βίντεο δεν υποστηρίζονται. Χρησιμοποίησε YouTube." }, { status: 400 });
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("[upload] missing supabase env vars");
+      return NextResponse.json({ error: "Server misconfigured: missing Supabase credentials" }, { status: 500 });
+    }
 
-  const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-  const bytes = await file.arrayBuffer();
+    const formData = await req.formData();
+    const file = formData.get("file") as File | null;
+    if (!file) return NextResponse.json({ error: "no_file" }, { status: 400 });
+    if (file.type.startsWith("video/")) return NextResponse.json({ error: "Τα βίντεο δεν υποστηρίζονται. Χρησιμοποίησε YouTube." }, { status: 400 });
 
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(safeName, bytes, { contentType: file.type, upsert: false });
+    const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const bytes = await file.arrayBuffer();
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(safeName, bytes, { contentType: file.type, upsert: false });
+
+    if (error) {
+      console.error("[upload] supabase error:", error);
+      const msg = error.message || (error as { error?: string }).error || "Supabase upload failed";
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
+
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(safeName);
+    return NextResponse.json({ url: data.publicUrl });
+  } catch (e: unknown) {
+    console.error("[upload] unexpected error:", e);
+    const msg = e instanceof Error ? e.message : "Unexpected upload error";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
-
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(safeName);
-  return NextResponse.json({ url: data.publicUrl });
 }
 
 export async function DELETE(req: NextRequest) {
