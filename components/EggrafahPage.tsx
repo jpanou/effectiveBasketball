@@ -33,89 +33,46 @@ function PdfIcon({ className }: { className?: string }) {
 
 function DocumentCard({ post, onClick }: { post: Post; onClick: () => void }) {
   const isPdfIcon = post.thumbnail_url === "/assets/pdf-thumbnail.svg";
-  const isImg = !isPdfIcon && post.thumbnail_url ? isImageUrl(post.thumbnail_url) : false;
-  const isPdf = post.thumbnail_url ? isPdfUrl(post.thumbnail_url) : false;
-  const d = new Date(post.created_at);
-  const dateStr = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  const hasThumb = post.thumbnail_url && !isPdfIcon;
 
   return (
     <button
       onClick={onClick}
-      className="group w-full bg-[#111] border border-[#222] rounded-2xl overflow-hidden hover:border-[#F97316]/40 hover:shadow-[0_0_24px_rgba(249,115,22,0.12)] transition-all duration-300 cursor-pointer text-left"
+      className="group w-full aspect-video bg-[#1A1A1A] rounded-2xl overflow-hidden relative cursor-pointer hover:ring-2 hover:ring-[#F97316]/40 hover:shadow-[0_0_24px_rgba(249,115,22,0.12)] transition-all duration-300"
     >
-      {/* Preview area */}
-      <div className="relative h-48 bg-[#1A1A1A] overflow-hidden flex items-center justify-center">
-        {isPdfIcon ? (
-          // New-format PDF: show the icon centred with padding
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src="/assets/pdf-thumbnail.svg"
-            alt="PDF"
-            className="h-28 w-auto object-contain group-hover:scale-110 transition-transform duration-300"
-          />
-        ) : isImg ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.thumbnail_url}
-            alt={post.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-        ) : isPdf ? (
-          <div className="flex flex-col items-center gap-2">
-            <PdfIcon className="w-16 h-16 text-[#F97316]" />
-            <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">PDF</span>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-2">
-            <PdfIcon className="w-16 h-16 text-[#333]" />
-          </div>
-        )}
-
-        {/* Badge */}
-        <div className="absolute top-3 left-3">
-          <span className="bg-[#F97316] text-white text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wide">
-            Έγγραφο
-          </span>
+      {isPdfIcon ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src="/assets/pdf-thumbnail.svg"
+          alt="PDF"
+          className="w-full h-full object-contain p-8 group-hover:scale-105 transition-transform duration-300"
+        />
+      ) : hasThumb ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.thumbnail_url}
+          alt={post.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center">
+          <PdfIcon className="w-16 h-16 text-[#333]" />
         </div>
+      )}
 
-        {/* Hover overlay hint */}
-        <div className="absolute inset-0 bg-[#F97316]/0 group-hover:bg-[#F97316]/5 transition-colors duration-300 flex items-center justify-center">
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/70 text-white text-xs px-3 py-1.5 rounded-lg border border-white/10">
-            Προβολή
-          </span>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="p-5 flex flex-col">
-        <h3
-          className="text-lg text-white mb-2 group-hover:text-[#F97316] transition-colors duration-200 line-clamp-2"
-          style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
-        >
-          {post.title}
-        </h3>
-
-        <div className="flex items-center gap-4 text-xs text-gray-600 mt-auto">
-          <span className="flex items-center gap-1">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-            </svg>
-            {post.views}
-          </span>
-          <span className="ml-auto">{dateStr}</span>
-        </div>
+      {/* Hover overlay */}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300 flex items-center justify-center">
+        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/70 text-white text-sm px-4 py-2 rounded-lg border border-white/10">
+          Προβολή
+        </span>
       </div>
     </button>
   );
 }
 
 function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
-  // New format: video_url holds the actual content (PDF URL or YouTube URL)
-  // Legacy format: thumbnail_url holds the content (PDF URL or image URL)
   const ytId = getYouTubeId(post.video_url || "");
   const isVideoPdf = !ytId && post.video_url ? isPdfUrl(post.video_url) : false;
-  // Legacy fallback
   const isThumbnailPdf = !post.video_url && post.thumbnail_url ? isPdfUrl(post.thumbnail_url) : false;
   const isThumbnailImg = !post.video_url && post.thumbnail_url ? isImageUrl(post.thumbnail_url) : false;
 
@@ -126,27 +83,19 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0A0A0A]/95 overflow-y-auto">
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-3 bg-[#0A0A0A] border-b border-[#222]">
-        <span
-          className="text-white text-sm font-semibold truncate max-w-xs md:max-w-lg"
-          style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
-        >
-          {post.title}
-        </span>
-        <button
-          onClick={onClose}
-          className="flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors cursor-pointer ml-4 shrink-0"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-          </svg>
-          Κλείσιμο
-        </button>
-      </div>
+      {/* Fixed close button — always visible regardless of scroll */}
+      <button
+        onClick={onClose}
+        className="fixed top-4 right-4 z-[60] flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#222] border border-[#333] hover:border-[#F97316]/50 text-gray-400 hover:text-white text-sm px-4 py-2 rounded-xl transition-all duration-200 cursor-pointer shadow-lg"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+        Κλείσιμο
+      </button>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 pt-10 pb-20">
+      <div className="max-w-4xl mx-auto px-6 pt-16 pb-20">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -163,7 +112,6 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
           </h1>
 
           {ytId ? (
-            // Video document — embed YouTube
             <iframe
               src={`https://www.youtube.com/embed/${ytId}`}
               className="w-full aspect-video rounded-2xl border border-[#222]"
@@ -172,7 +120,6 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
               title={post.title}
             />
           ) : isVideoPdf ? (
-            // New format PDF document — video_url holds the PDF
             <iframe
               src={post.video_url}
               className="w-full rounded-2xl border border-[#222]"
@@ -180,7 +127,6 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
               title={post.title}
             />
           ) : isThumbnailPdf ? (
-            // Legacy PDF stored in thumbnail_url
             <iframe
               src={post.thumbnail_url}
               className="w-full rounded-2xl border border-[#222]"
@@ -188,7 +134,6 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
               title={post.title}
             />
           ) : isThumbnailImg ? (
-            // Legacy image stored in thumbnail_url (also handles new image format)
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={post.thumbnail_url}
@@ -283,7 +228,7 @@ export default function EggrafahPage({ initialPosts }: { initialPosts: Post[] })
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-[#111] border border-[#222] rounded-2xl h-64 animate-pulse" />
+              <div key={i} className="bg-[#111] border border-[#222] rounded-2xl aspect-video animate-pulse" />
             ))}
           </div>
         ) : posts.length === 0 ? (
