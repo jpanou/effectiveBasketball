@@ -188,8 +188,27 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
           </h1>
 
           {post.excerpt && (
-            <p className="text-gray-400 text-base leading-relaxed mb-6">{post.excerpt}</p>
+            <p className="text-gray-400 text-base leading-relaxed mb-4">{post.excerpt}</p>
           )}
+
+          <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
+            <span>{new Date(post.created_at).toLocaleDateString("el-GR", { year: "numeric", month: "long", day: "numeric" })}</span>
+            <span className="flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+              {post.views} προβολές
+            </span>
+            {(post.avg_rating ?? 0) > 0 && (
+              <span className="flex items-center gap-1 text-[#F97316]">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+                {(post.avg_rating as number).toFixed(1)}
+              </span>
+            )}
+          </div>
 
           {ytId ? (
             <iframe
