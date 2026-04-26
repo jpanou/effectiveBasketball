@@ -170,6 +170,31 @@ export async function getAllPostsAdmin(): Promise<Post[]> {
   return (data as PostWithRatings[]).map(attachAvgRating);
 }
 
+// ─── Team Settings ────────────────────────────────────────────────────────────
+
+export interface TeamSettings {
+  team_name: string;
+  division: string;
+  photos: string[];
+}
+
+export async function getTeamSettings(): Promise<TeamSettings> {
+  const { data, error } = await supabase
+    .from("team_settings")
+    .select("team_name, division, photos")
+    .eq("id", 1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ?? { team_name: "", division: "", photos: [] };
+}
+
+export async function updateTeamSettings(settings: TeamSettings): Promise<void> {
+  const { error } = await supabase
+    .from("team_settings")
+    .upsert({ id: 1, ...settings });
+  if (error) throw error;
+}
+
 // ─── Newsletter ────────────────────────────────────────────────────────────────
 
 export async function subscribeNewsletter(
