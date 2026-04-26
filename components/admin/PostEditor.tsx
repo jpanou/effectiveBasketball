@@ -426,6 +426,19 @@ export default function PostEditor({ post }: Props) {
           </p>
         </div>
 
+        {/* Description — document type only */}
+        {type === "document" && (
+          <div>
+            <label className={labelCls}>Σύντομη Περιγραφή</label>
+            <textarea
+              className={`${inputCls} resize-none h-20`}
+              value={excerpt}
+              onChange={(e) => setExcerpt(e.target.value)}
+              placeholder="Σύντομη περιγραφή του εγγράφου..."
+            />
+          </div>
+        )}
+
         {/* Type */}
         <div>
           <label className={labelCls}>Τύπος *</label>
@@ -587,16 +600,6 @@ export default function PostEditor({ post }: Props) {
               </div>
             )}
 
-            {/* Description — shown for all document sub-types */}
-            <div>
-              <label className={labelCls}>Σύντομη Περιγραφή</label>
-              <textarea
-                className={`${inputCls} resize-none h-20`}
-                value={excerpt}
-                onChange={(e) => setExcerpt(e.target.value)}
-                placeholder="Σύντομη περιγραφή του εγγράφου..."
-              />
-            </div>
           </div>
         )}
 
