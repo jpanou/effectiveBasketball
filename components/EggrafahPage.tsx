@@ -172,6 +172,14 @@ function DocumentCard({ post, onClick }: { post: Post; onClick: () => void }) {
   );
 }
 
+const LS_KEY = "eb_rated_posts";
+function getSavedRating(slug: string): number {
+  try { const s = JSON.parse(localStorage.getItem(LS_KEY) || "{}"); return s[slug] ?? 0; } catch { return 0; }
+}
+function saveRating(slug: string, score: number) {
+  try { const s = JSON.parse(localStorage.getItem(LS_KEY) || "{}"); s[slug] = score; localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch { /* ignore */ }
+}
+
 function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
@@ -184,13 +192,16 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
+    const saved = getSavedRating(post.slug);
+    if (saved > 0) { setRating(saved); setRated(true); }
     return () => { document.body.style.overflow = ""; };
-  }, []);
+  }, [post.slug]);
 
   async function submitRating(score: number) {
     if (rated) return;
     setRating(score);
     setRated(true);
+    saveRating(post.slug, score);
     await fetch(`/api/posts/${post.slug}/rate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

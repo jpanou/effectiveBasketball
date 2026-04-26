@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import type { Post } from "@/lib/db";
 import Link from "next/link";
@@ -16,15 +16,38 @@ const backHref: Record<string, string> = {
   scouting: "/scouting",
 };
 
+const LS_KEY = "eb_rated_posts";
+
+function getSavedRating(slug: string): number {
+  try {
+    const stored = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+    return stored[slug] ?? 0;
+  } catch { return 0; }
+}
+
+function saveRating(slug: string, score: number) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+    stored[slug] = score;
+    localStorage.setItem(LS_KEY, JSON.stringify(stored));
+  } catch { /* ignore */ }
+}
+
 export default function PostDetailPage({ post }: { post: Post }) {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [rated, setRated] = useState(false);
 
+  useEffect(() => {
+    const saved = getSavedRating(post.slug);
+    if (saved > 0) { setRating(saved); setRated(true); }
+  }, [post.slug]);
+
   async function submitRating(score: number) {
     if (rated) return;
     setRating(score);
     setRated(true);
+    saveRating(post.slug, score);
     await fetch(`/api/posts/${post.slug}/rate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
