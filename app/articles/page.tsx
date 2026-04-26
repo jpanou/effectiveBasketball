@@ -1,15 +1,16 @@
 export const dynamic = "force-dynamic";
 
 import PostListingPage from "@/components/PostListingPage";
-import { getPosts } from "@/lib/db";
+import { getPostsPaginated } from "@/lib/db";
 
 export default async function ArticlesPage() {
-  const posts = await getPosts("article", "newest");
+  const { posts, total } = await getPostsPaginated("article", "newest", 1, 9);
   return (
     <PostListingPage
       title="ΑΡΘΡΑ"
       subtitle="Αναλύσεις, απόψεις και βαθιά κατανόηση του παιχνιδιού"
       initialPosts={posts}
+      initialTotal={total}
       type="article"
     />
   );

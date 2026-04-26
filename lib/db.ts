@@ -72,6 +72,18 @@ export async function getPosts(
   return posts;
 }
 
+export async function getPostsPaginated(
+  type: PostType | undefined,
+  sort: SortBy = "newest",
+  page = 1,
+  limit = 9
+): Promise<{ posts: Post[]; total: number }> {
+  const all = await getPosts(type, sort);
+  const total = all.length;
+  const offset = (page - 1) * limit;
+  return { posts: all.slice(offset, offset + limit), total };
+}
+
 export async function getPostBySlug(slug: string): Promise<Post | undefined> {
   const { data, error } = await supabase
     .from("posts")

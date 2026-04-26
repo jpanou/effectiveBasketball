@@ -12,6 +12,61 @@ const sortOptions: { value: SortOption; label: string }[] = [
   { value: "most_viewed", label: "Περισσότερες Προβολές" },
 ];
 
+const LIMIT = 9;
+
+function Pagination({ page, totalPages, onPage }: {
+  page: number;
+  totalPages: number;
+  onPage: (p: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+
+  const pages: (number | "…")[] = [];
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) {
+      pages.push(i);
+    } else if (pages[pages.length - 1] !== "…") {
+      pages.push("…");
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-2 mt-12">
+      <button
+        onClick={() => onPage(page - 1)}
+        disabled={page === 1}
+        className="px-3 py-2 rounded-xl text-sm border border-[#333] bg-[#111] text-gray-400 hover:border-[#F97316]/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
+      >
+        ←
+      </button>
+      {pages.map((p, i) =>
+        p === "…" ? (
+          <span key={`e${i}`} className="text-gray-600 px-1 select-none">…</span>
+        ) : (
+          <button
+            key={p}
+            onClick={() => onPage(p as number)}
+            className={`w-9 h-9 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer ${
+              p === page
+                ? "bg-[#F97316] text-white border border-[#F97316]"
+                : "bg-[#111] border border-[#333] text-gray-400 hover:border-[#F97316]/50 hover:text-white"
+            }`}
+          >
+            {p}
+          </button>
+        )
+      )}
+      <button
+        onClick={() => onPage(page + 1)}
+        disabled={page === totalPages}
+        className="px-3 py-2 rounded-xl text-sm border border-[#333] bg-[#111] text-gray-400 hover:border-[#F97316]/50 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
+      >
+        →
+      </button>
+    </div>
+  );
+}
+
 function isImageUrl(url: string) {
   return /\.(jpg|jpeg|png|gif|webp|svg|avif)(\?|$)/i.test(url);
 }
@@ -302,25 +357,39 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
   );
 }
 
-export default function EggrafahPage({ initialPosts }: { initialPosts: Post[] }) {
+export default function EggrafahPage({ initialPosts, initialTotal }: { initialPosts: Post[]; initialTotal: number }) {
   const [sort, setSort] = useState<SortOption>("newest");
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [loading, setLoading] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(initialTotal);
+  const totalPages = Math.ceil(total / LIMIT);
 
-  async function handleSort(value: SortOption) {
-    if (value === sort) return;
-    setSort(value);
+  async function fetchPage(newSort: SortOption, newPage: number) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/posts?type=document&sort=${value}`);
+      const res = await fetch(`/api/posts?type=document&sort=${newSort}&page=${newPage}&limit=${LIMIT}`);
       const data = await res.json();
-      setPosts(data);
+      setPosts(data.posts);
+      setTotal(data.total);
+      setPage(newPage);
     } catch {
       // keep existing
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSort(value: SortOption) {
+    if (value === sort) return;
+    setSort(value);
+    await fetchPage(value, 1);
+  }
+
+  async function handlePage(newPage: number) {
+    await fetchPage(sort, newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
@@ -368,7 +437,7 @@ export default function EggrafahPage({ initialPosts }: { initialPosts: Post[] })
         {/* Grid */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
+            {[...Array(9)].map((_, i) => (
               <div key={i} className="bg-[#111] border border-[#222] rounded-2xl h-64 animate-pulse" />
             ))}
           </div>
@@ -400,6 +469,8 @@ export default function EggrafahPage({ initialPosts }: { initialPosts: Post[] })
             ))}
           </div>
         )}
+
+        <Pagination page={page} totalPages={totalPages} onPage={handlePage} />
       </div>
     </div>
   );
