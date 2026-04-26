@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import EmojiPicker from "@/components/admin/EmojiPicker";
 
 interface Props {
   value: string;
@@ -112,6 +113,17 @@ export default function RichTextEditor({ value, onChange }: Props) {
             <path strokeLinecap="round" strokeLinejoin="round" d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3" />
           </svg>
         </ToolbarBtn>
+
+        <span className="w-px h-5 bg-[#333] mx-1" />
+
+        <EmojiPicker
+          onPick={(emoji) => {
+            editorRef.current?.focus();
+            document.execCommand("insertText", false, emoji);
+            sync();
+          }}
+          align="left"
+        />
       </div>
 
       {/* Editable area */}

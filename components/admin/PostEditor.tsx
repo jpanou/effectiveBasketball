@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Post } from "@/lib/db";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import Toggle from "@/components/admin/Toggle";
+import EmojiPicker from "@/components/admin/EmojiPicker";
 import { Cropper, CropperCropArea, CropperDescription, CropperImage } from "@/components/ui/image-crop";
 
 interface Props {
@@ -216,6 +217,8 @@ export default function PostEditor({ post }: Props) {
   const naturalSizeRef = useRef<{ w: number; h: number } | null>(null);
   const firstCropFireRef = useRef(true);
   const docFileInputRef = useRef<HTMLInputElement | null>(null);
+  const titleRef = useRef<HTMLInputElement | null>(null);
+  const excerptRef = useRef<HTMLTextAreaElement | null>(null);
   const [videoUrl, setVideoUrl] = useState(post?.video_url || "");
   const [videoFormat, setVideoFormat] = useState<"regular" | "shorts">(post?.video_format === "shorts" ? "shorts" : "regular");
   const [docFileType, setDocFileType] = useState<"pdf" | "image" | "video">(detectDocFileType(post));
@@ -251,6 +254,31 @@ export default function PostEditor({ post }: Props) {
   function handleTitleChange(val: string) {
     setTitle(val);
     if (!isEdit) setSlug(slugify(val));
+  }
+
+  function insertAtCursor(
+    el: HTMLInputElement | HTMLTextAreaElement | null,
+    current: string,
+    text: string,
+    setter: (v: string) => void,
+    onAfter?: (newValue: string) => void
+  ) {
+    if (!el) {
+      const next = current + text;
+      setter(next);
+      onAfter?.(next);
+      return;
+    }
+    const start = el.selectionStart ?? current.length;
+    const end = el.selectionEnd ?? current.length;
+    const next = current.slice(0, start) + text + current.slice(end);
+    setter(next);
+    onAfter?.(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + text.length;
+      el.setSelectionRange(pos, pos);
+    });
   }
 
   function handleCropChange(area: { x: number; y: number; width: number; height: number } | null) {
@@ -441,7 +469,23 @@ export default function PostEditor({ post }: Props) {
         {/* Title */}
         <div>
           <label className={labelCls}>Τίτλος *</label>
-          <input className={inputCls} value={title} onChange={(e) => handleTitleChange(e.target.value)} placeholder="Τίτλος ανάρτησης" />
+          <div className="relative">
+            <input
+              ref={titleRef}
+              className={`${inputCls} pr-12`}
+              value={title}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              placeholder="Τίτλος ανάρτησης"
+            />
+            <div className="absolute top-1/2 right-2 -translate-y-1/2">
+              <EmojiPicker
+                onPick={(emoji) => insertAtCursor(titleRef.current, title, emoji, (v) => {
+                  setTitle(v);
+                  if (!isEdit) setSlug(slugify(v));
+                })}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Slug */}
@@ -457,12 +501,20 @@ export default function PostEditor({ post }: Props) {
         {type === "document" && (
           <div>
             <label className={labelCls}>Σύντομη Περιγραφή</label>
-            <textarea
-              className={`${inputCls} resize-none h-20`}
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              placeholder="Σύντομη περιγραφή του εγγράφου..."
-            />
+            <div className="relative">
+              <textarea
+                ref={excerptRef}
+                className={`${inputCls} resize-none h-20 pr-12`}
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                placeholder="Σύντομη περιγραφή του εγγράφου..."
+              />
+              <div className="absolute top-2 right-2">
+                <EmojiPicker
+                  onPick={(emoji) => insertAtCursor(excerptRef.current, excerpt, emoji, setExcerpt)}
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -636,7 +688,20 @@ export default function PostEditor({ post }: Props) {
             {/* Excerpt */}
             <div>
               <label className={labelCls}>Σύντομη Περιγραφή</label>
-              <textarea className={`${inputCls} resize-none h-20`} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Σύντομη περιγραφή..." />
+              <div className="relative">
+                <textarea
+                  ref={excerptRef}
+                  className={`${inputCls} resize-none h-20 pr-12`}
+                  value={excerpt}
+                  onChange={(e) => setExcerpt(e.target.value)}
+                  placeholder="Σύντομη περιγραφή..."
+                />
+                <div className="absolute top-2 right-2">
+                  <EmojiPicker
+                    onPick={(emoji) => insertAtCursor(excerptRef.current, excerpt, emoji, setExcerpt)}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Content */}
