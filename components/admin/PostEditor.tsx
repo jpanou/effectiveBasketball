@@ -281,6 +281,10 @@ export default function PostEditor({ post }: Props) {
   }
 
   async function uploadFile(file: File, field: "thumbnail" | "video") {
+    if (file.size > 5 * 1024 * 1024) {
+      setError(`Το αρχείο πρέπει να είναι μικρότερο από 5MB. (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      return;
+    }
     setUploading(true);
     setError("");
     if (field === "thumbnail") {

@@ -43,6 +43,10 @@ export default function AdminMediaLibrary({ initialFiles }: { initialFiles: stri
       setError("Τα βίντεο δεν υποστηρίζονται. Χρησιμοποίησε YouTube.");
       return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      setError(`Το αρχείο πρέπει να είναι μικρότερο από 5MB. (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      return;
+    }
     setUploading(true);
     setError(null);
     try {

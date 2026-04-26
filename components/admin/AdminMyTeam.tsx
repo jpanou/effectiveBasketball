@@ -31,6 +31,11 @@ export default function AdminMyTeam() {
     const file = e.target.files?.[0];
     if (!file) return;
     setError("");
+    if (file.size > 5 * 1024 * 1024) {
+      setError(`Το αρχείο πρέπει να είναι μικρότερο από 5MB. (${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     setUploading(true);
     try {
       const urlRes = await fetch(`/api/admin/upload-url?name=${encodeURIComponent(file.name)}`);
