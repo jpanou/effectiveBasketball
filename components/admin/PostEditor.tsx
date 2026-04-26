@@ -363,7 +363,7 @@ export default function PostEditor({ post }: Props) {
     const body = {
       title,
       slug,
-      excerpt: type === "document" ? "" : excerpt,
+      excerpt,
       content: type === "document" ? "" : content,
       type,
       published,
@@ -586,6 +586,17 @@ export default function PostEditor({ post }: Props) {
                 <p className="mt-1.5 text-xs text-gray-600">Επικόλλησε σύνδεσμο YouTube βίντεο</p>
               </div>
             )}
+
+            {/* Description — shown for all document sub-types */}
+            <div>
+              <label className={labelCls}>Σύντομη Περιγραφή</label>
+              <textarea
+                className={`${inputCls} resize-none h-20`}
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                placeholder="Σύντομη περιγραφή του εγγράφου..."
+              />
+            </div>
           </div>
         )}
 

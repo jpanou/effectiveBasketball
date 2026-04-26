@@ -143,12 +143,26 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
     });
   }
 
+  async function handleDownload() {
+    try {
+      const res = await fetch(post.thumbnail_url!);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const ext = post.thumbnail_url!.split(".").pop()?.split("?")[0] || "jpg";
+      a.download = `${post.title}.${ext}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+  }
+
   return (
     <div className="fixed inset-0 z-[55] bg-[#0A0A0A]/95 overflow-y-auto">
-      {/* Close button — fixed just below the site navbar */}
+      {/* Close button — fixed below the site navbar with a comfortable gap */}
       <button
         onClick={onClose}
-        className="fixed top-20 right-4 z-[60] flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#222] border border-[#333] hover:border-[#F97316]/50 text-gray-400 hover:text-white text-sm px-4 py-2 rounded-xl transition-all duration-200 cursor-pointer shadow-lg"
+        className="fixed top-24 right-4 z-[60] flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#222] border border-[#333] hover:border-[#F97316]/50 text-gray-400 hover:text-white text-sm px-4 py-2 rounded-xl transition-all duration-200 cursor-pointer shadow-lg"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -196,12 +210,25 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
               title={post.title}
             />
           ) : isThumbnailImg ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={post.thumbnail_url}
-              alt={post.title}
-              className="w-full rounded-2xl"
-            />
+            <div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={post.thumbnail_url}
+                alt={post.title}
+                className="w-full rounded-2xl"
+              />
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#222] border border-[#333] hover:border-[#F97316]/50 text-gray-400 hover:text-white text-sm px-4 py-2 rounded-xl transition-all duration-200 cursor-pointer"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  </svg>
+                  Λήψη Εικόνας
+                </button>
+              </div>
+            </div>
           ) : post.thumbnail_url ? (
             <div className="flex flex-col items-center gap-6 py-20 border border-dashed border-[#333] rounded-2xl">
               <PdfIcon className="w-20 h-20 text-[#F97316]" />
