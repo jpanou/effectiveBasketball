@@ -38,7 +38,7 @@ export default function HeroSection() {
             <span className="text-[#F97316]">COME TO TALK BALL</span>
           </h1>
           <p className="text-gray-300 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-            Δεν υπάρχει παλιό μπάσκετ, δεν υπάρχει σύγχρονο μπάσκετ, υπάρχει αποτελεσματικό μπάσκετ.
+            Δεν υπάρχει παλιό μπάσκετ, δεν υπάρχει σύγχρονο μπάσκετ, υπάρχει αποτελεσματικό μπάσκετ! ! ! !
           </p>
         </motion.div>
 
