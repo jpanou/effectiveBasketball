@@ -112,8 +112,8 @@ export default function PostDetailPage({ post }: { post: Post }) {
           </div>
         </motion.div>
 
-        {/* Thumbnail — articles and scouting only */}
-        {post.thumbnail_url && post.type !== "tutorial" && (
+        {/* Thumbnail — articles and scouting (regular only — shorts skip the hero) */}
+        {post.thumbnail_url && post.type !== "tutorial" && post.video_format !== "shorts" && (
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -130,21 +130,28 @@ export default function PostDetailPage({ post }: { post: Post }) {
           </motion.div>
         )}
 
-        {/* Video — before content for tutorials only */}
-        {post.video_url && post.type === "tutorial" && (
+        {/* Video — shorts: vertical 9:16; tutorial regular: full-width before content */}
+        {post.video_url && (post.type === "tutorial" || post.video_format === "shorts") && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="mb-8 rounded-2xl overflow-hidden bg-black"
+            className={post.video_format === "shorts" ? "mb-8 mx-auto w-full max-w-[360px] rounded-2xl overflow-hidden bg-black" : "mb-8 rounded-2xl overflow-hidden bg-black"}
           >
             {(() => {
-              const m = post.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+              const m = post.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
               const embedUrl = m ? `https://www.youtube.com/embed/${m[1]}` : null;
+              const isShorts = post.video_format === "shorts";
               return embedUrl ? (
-                <iframe src={embedUrl} className="w-full aspect-video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={post.title} />
+                <iframe
+                  src={embedUrl}
+                  className={isShorts ? "w-full aspect-[9/16]" : "w-full aspect-video"}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={post.title}
+                />
               ) : (
-                <video controls className="w-full" src={post.video_url}>Ο browser σας δεν υποστηρίζει video.</video>
+                <video controls className={isShorts ? "w-full aspect-[9/16]" : "w-full"} src={post.video_url}>Ο browser σας δεν υποστηρίζει video.</video>
               );
             })()}
           </motion.div>
@@ -159,8 +166,8 @@ export default function PostDetailPage({ post }: { post: Post }) {
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
-        {/* Video — after content for articles and scouting */}
-        {post.video_url && post.type !== "tutorial" && (
+        {/* Video — after content for regular articles and scouting */}
+        {post.video_url && post.type !== "tutorial" && post.video_format !== "shorts" && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -168,7 +175,7 @@ export default function PostDetailPage({ post }: { post: Post }) {
             className="mt-8 rounded-2xl overflow-hidden bg-black"
           >
             {(() => {
-              const m = post.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+              const m = post.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
               const embedUrl = m ? `https://www.youtube.com/embed/${m[1]}` : null;
               return embedUrl ? (
                 <iframe src={embedUrl} className="w-full aspect-video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={post.title} />

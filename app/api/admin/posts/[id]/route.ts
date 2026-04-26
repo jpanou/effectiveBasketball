@@ -12,7 +12,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!await auth()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
   const body = await req.json();
-  const { title, slug, excerpt, content, type, featured, published, thumbnail_url, thumbnail_position, video_url } = body;
+  const { title, slug, excerpt, content, type, featured, published, thumbnail_url, thumbnail_position, video_url, video_format } = body;
 
   try {
     await updatePost(Number(id), {
@@ -26,6 +26,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       thumbnail_url: thumbnail_url ?? "",
       thumbnail_position: thumbnail_position ?? "50% 50%",
       video_url: video_url ?? "",
+      video_format: video_format === "shorts" ? "shorts" : "regular",
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "error";

@@ -6,11 +6,18 @@ import type { Post } from "@/lib/db";
 import PostCard from "@/components/PostCard";
 
 type SortOption = "newest" | "highest_rated" | "most_viewed";
+type FormatOption = "all" | "regular" | "shorts";
 
 const sortOptions: { value: SortOption; label: string }[] = [
   { value: "newest", label: "Νεότερα" },
   { value: "highest_rated", label: "Υψηλότερη Βαθμολογία" },
   { value: "most_viewed", label: "Περισσότερες Προβολές" },
+];
+
+const formatOptions: { value: FormatOption; label: string }[] = [
+  { value: "all", label: "Όλα" },
+  { value: "regular", label: "Κανονικά" },
+  { value: "shorts", label: "Shorts" },
 ];
 
 const LIMIT = 9;
@@ -78,16 +85,17 @@ interface Props {
 
 export default function PostListingPage({ title, subtitle, initialPosts, initialTotal, type }: Props) {
   const [sort, setSort] = useState<SortOption>("newest");
+  const [format, setFormat] = useState<FormatOption>("all");
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(initialTotal);
   const totalPages = Math.ceil(total / LIMIT);
 
-  async function fetchPage(newSort: SortOption, newPage: number) {
+  async function fetchPage(newSort: SortOption, newFormat: FormatOption, newPage: number) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/posts?type=${type}&sort=${newSort}&page=${newPage}&limit=${LIMIT}`);
+      const res = await fetch(`/api/posts?type=${type}&sort=${newSort}&format=${newFormat}&page=${newPage}&limit=${LIMIT}`);
       const data = await res.json();
       setPosts(data.posts);
       setTotal(data.total);
@@ -102,11 +110,17 @@ export default function PostListingPage({ title, subtitle, initialPosts, initial
   async function handleSort(value: SortOption) {
     if (value === sort) return;
     setSort(value);
-    await fetchPage(value, 1);
+    await fetchPage(value, format, 1);
+  }
+
+  async function handleFormat(value: FormatOption) {
+    if (value === format) return;
+    setFormat(value);
+    await fetchPage(sort, value, 1);
   }
 
   async function handlePage(newPage: number) {
-    await fetchPage(sort, newPage);
+    await fetchPage(sort, format, newPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -130,22 +144,40 @@ export default function PostListingPage({ title, subtitle, initialPosts, initial
           <p className="text-gray-400 text-sm">{subtitle}</p>
         </motion.div>
 
-        {/* Filter bar */}
-        <div className="flex items-center gap-3 mb-10 flex-wrap">
-          <span className="text-gray-500 text-sm">Ταξινόμηση:</span>
-          {sortOptions.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => handleSort(opt.value)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
-                sort === opt.value
-                  ? "bg-[#F97316] text-white"
-                  : "bg-[#111] border border-[#333] text-gray-400 hover:border-[#F97316]/50 hover:text-white"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
+        {/* Filter bars */}
+        <div className="mb-10 space-y-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-gray-500 text-sm w-24">Ταξινόμηση:</span>
+            {sortOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleSort(opt.value)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  sort === opt.value
+                    ? "bg-[#F97316] text-white"
+                    : "bg-[#111] border border-[#333] text-gray-400 hover:border-[#F97316]/50 hover:text-white"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-gray-500 text-sm w-24">Μορφή:</span>
+            {formatOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleFormat(opt.value)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-pointer ${
+                  format === opt.value
+                    ? "bg-[#F97316] text-white"
+                    : "bg-[#111] border border-[#333] text-gray-400 hover:border-[#F97316]/50 hover:text-white"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Grid */}

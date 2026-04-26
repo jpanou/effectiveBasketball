@@ -22,7 +22,7 @@ const typeLabel: Record<string, string> = {
 };
 
 function getYouTubeId(url: string): string | null {
-  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
   return m ? m[1] : null;
 }
 
@@ -82,17 +82,19 @@ function VideoEmbed({ url, title }: { url: string; title: string }) {
 }
 
 function PreviewOverlay({
-  title, excerpt, content, type, thumbnailUrl, thumbnailPosition, videoUrl,
+  title, excerpt, content, type, videoFormat, thumbnailUrl, thumbnailPosition, videoUrl,
   onClose,
 }: {
   title: string; excerpt: string; content: string;
   type: "article" | "tutorial" | "scouting" | "document";
+  videoFormat: "regular" | "shorts";
   thumbnailUrl: string; thumbnailPosition: string; videoUrl: string;
   onClose: () => void;
 }) {
   const dateStr = new Date().toLocaleDateString("el-GR", { year: "numeric", month: "long", day: "numeric" });
   const ytId = getYouTubeId(videoUrl);
-  const effectiveThumbnail = type === "tutorial"
+  const isShorts = videoFormat === "shorts";
+  const effectiveThumbnail = type === "tutorial" && !isShorts
     ? (ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : "")
     : thumbnailUrl;
 
@@ -144,8 +146,8 @@ function PreviewOverlay({
           </span>
         </div>
 
-        {/* Thumbnail — articles and scouting only */}
-        {effectiveThumbnail && type !== "tutorial" && (
+        {/* Thumbnail — articles/scouting regular only (shorts skip the hero) */}
+        {effectiveThumbnail && type !== "tutorial" && !isShorts && (
           <div className="mb-8 rounded-2xl overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -157,10 +159,23 @@ function PreviewOverlay({
           </div>
         )}
 
-        {/* Video before content — tutorials only */}
-        {videoUrl && type === "tutorial" && (
-          <div className="mb-8 rounded-2xl overflow-hidden bg-black">
-            <VideoEmbed url={videoUrl} title={title} />
+        {/* Video — shorts: vertical 9:16; tutorial regular: full-width before content */}
+        {videoUrl && (type === "tutorial" || isShorts) && (
+          <div className={isShorts ? "mb-8 mx-auto w-full max-w-[360px] rounded-2xl overflow-hidden bg-black" : "mb-8 rounded-2xl overflow-hidden bg-black"}>
+            {(() => {
+              const yt = getYouTubeId(videoUrl);
+              return yt ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${yt}`}
+                  className={isShorts ? "w-full aspect-[9/16]" : "w-full aspect-video"}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={title}
+                />
+              ) : (
+                <video controls className={isShorts ? "w-full aspect-[9/16]" : "w-full"} src={videoUrl}>Ο browser σας δεν υποστηρίζει video.</video>
+              );
+            })()}
           </div>
         )}
 
@@ -174,8 +189,8 @@ function PreviewOverlay({
           <p className="text-gray-600 italic">Χωρίς περιεχόμενο ακόμα...</p>
         )}
 
-        {/* Video after content — articles and scouting */}
-        {videoUrl && type !== "tutorial" && (
+        {/* Video after content — articles and scouting regular only */}
+        {videoUrl && type !== "tutorial" && !isShorts && (
           <div className="mt-8 rounded-2xl overflow-hidden bg-black">
             <VideoEmbed url={videoUrl} title={title} />
           </div>
@@ -202,11 +217,13 @@ export default function PostEditor({ post }: Props) {
   const firstCropFireRef = useRef(true);
   const docFileInputRef = useRef<HTMLInputElement | null>(null);
   const [videoUrl, setVideoUrl] = useState(post?.video_url || "");
+  const [videoFormat, setVideoFormat] = useState<"regular" | "shorts">(post?.video_format === "shorts" ? "shorts" : "regular");
   const [docFileType, setDocFileType] = useState<"pdf" | "image" | "video">(detectDocFileType(post));
   const [showPreview, setShowPreview] = useState(false);
 
+  const isShorts = videoFormat === "shorts";
   const ytId = getYouTubeId(videoUrl);
-  const previewUrl = type === "tutorial"
+  const previewUrl = type === "tutorial" && !isShorts
     ? (ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : null)
     : thumbnailUrl || null;
 
@@ -287,7 +304,7 @@ export default function PostEditor({ post }: Props) {
     }
     setUploading(true);
     setError("");
-    if (field === "thumbnail") {
+    if (field === "thumbnail" && !isShorts) {
       try {
         const { width, height } = await readImageDimensions(file);
         if (width !== REQUIRED_THUMBNAIL_WIDTH || height !== REQUIRED_THUMBNAIL_HEIGHT) {
@@ -359,8 +376,12 @@ export default function PostEditor({ post }: Props) {
     }
     setSaving(true);
     setError("");
-    const isYouTubePost = type === "tutorial" || (type === "document" && docFileType === "video");
-    const youtubeId = isYouTubePost ? getYouTubeId(videoUrl) : null;
+    // Auto-derive thumbnail from YouTube only for regular tutorials and document videos
+    // (tutorial+shorts uses a manually uploaded thumbnail)
+    const isAutoThumb =
+      (type === "tutorial" && !isShorts) ||
+      (type === "document" && docFileType === "video");
+    const youtubeId = isAutoThumb ? getYouTubeId(videoUrl) : null;
     const effectiveThumbnail = youtubeId
       ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`
       : thumbnailUrl;
@@ -375,6 +396,7 @@ export default function PostEditor({ post }: Props) {
       thumbnail_url: effectiveThumbnail,
       thumbnail_position: type === "document" ? "50% 50%" : thumbnailPosition,
       video_url: videoUrl,
+      video_format: type === "document" ? "regular" : videoFormat,
     };
     try {
       let res;
@@ -407,6 +429,7 @@ export default function PostEditor({ post }: Props) {
           excerpt={excerpt}
           content={content}
           type={type}
+          videoFormat={videoFormat}
           thumbnailUrl={thumbnailUrl}
           thumbnailPosition={thumbnailPosition}
           videoUrl={videoUrl}
@@ -622,8 +645,8 @@ export default function PostEditor({ post }: Props) {
               <RichTextEditor value={content} onChange={setContent} />
             </div>
 
-            {/* Thumbnail upload — hidden for tutorials (auto-derived from YouTube) */}
-            {type !== "tutorial" && (
+            {/* Thumbnail upload — shown for articles/scouting always, and for tutorial+shorts */}
+            {(type !== "tutorial" || isShorts) && (
               <div>
                 <label className={labelCls}>Εικόνα Κεφαλίδας</label>
                 <div className="flex gap-3 items-center">
@@ -644,10 +667,32 @@ export default function PostEditor({ post }: Props) {
                   </label>
                 </div>
                 <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
-                  Η εικόνα πρέπει να είναι ακριβώς <span className="text-gray-500 font-mono">{REQUIRED_THUMBNAIL_WIDTH} × {REQUIRED_THUMBNAIL_HEIGHT}</span> pixels (αναλογία 2:1). Προσαρμόστε την εικόνα σε αυτές τις διαστάσεις πριν τη μεταφόρτωση — π.χ. με Canva, Photoshop ή κάποιο online resizer.
+                  {isShorts ? (
+                    <>Η εικόνα εμφανίζεται στην κάρτα της ανάρτησης (αναλογία 2:1). Οποιαδήποτε διάσταση γίνεται δεκτή — θα την προσαρμόσεις παρακάτω με τον cropper.</>
+                  ) : (
+                    <>Η εικόνα πρέπει να είναι ακριβώς <span className="text-gray-500 font-mono">{REQUIRED_THUMBNAIL_WIDTH} × {REQUIRED_THUMBNAIL_HEIGHT}</span> pixels (αναλογία 2:1). Προσαρμόστε την εικόνα σε αυτές τις διαστάσεις πριν τη μεταφόρτωση — π.χ. με Canva, Photoshop ή κάποιο online resizer.</>
+                  )}
                 </p>
               </div>
             )}
+
+            {/* Video format dropdown */}
+            <div>
+              <label className={labelCls}>Μορφή Video</label>
+              <select
+                className={inputCls}
+                value={videoFormat}
+                onChange={(e) => setVideoFormat(e.target.value as "regular" | "shorts")}
+              >
+                <option value="regular">Κανονικό Video</option>
+                <option value="shorts">Shorts</option>
+              </select>
+              <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
+                {isShorts
+                  ? "Επικόλλησε σύνδεσμο YouTube Shorts (π.χ. youtube.com/shorts/...). Το video θα εμφανίζεται κάθετα (9:16)."
+                  : "Κανονικό βίντεο σε YouTube — εμφανίζεται οριζόντια (16:9)."}
+              </p>
+            </div>
 
             {/* Cropper — shown when a thumbnail is available */}
             {previewUrl && (

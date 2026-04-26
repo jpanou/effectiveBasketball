@@ -43,6 +43,16 @@ export default function PostCard({ post }: { post: Post }) {
             {typeLabel[post.type] || post.type}
           </span>
         </div>
+        {post.video_format === "shorts" && (
+          <div className="absolute top-3 right-3">
+            <span className="flex items-center gap-1 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wide border border-white/20">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              Shorts
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Body */}

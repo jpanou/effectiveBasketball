@@ -67,6 +67,16 @@ export default function AdminMyTeam() {
     setPhotos((prev) => prev.filter((p) => p !== url));
   }
 
+  function movePhoto(index: number, direction: -1 | 1) {
+    setPhotos((prev) => {
+      const target = index + direction;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = prev.slice();
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
   async function handleSave() {
     if (!teamName.trim() || !division.trim()) {
       setError("Συμπλήρωσε όνομα ομάδας και κατηγορία.");
@@ -140,6 +150,36 @@ export default function AdminMyTeam() {
               <div key={url} className="relative group aspect-video rounded-xl overflow-hidden border border-[#222]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt={`Φωτογραφία ${i + 1}`} className="w-full h-full object-cover" />
+
+                {/* Order badge */}
+                <div className="absolute top-1.5 left-1.5 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold px-2 py-0.5 rounded-md">
+                  {i + 1}
+                </div>
+
+                {/* Reorder buttons (bottom-left on hover) */}
+                <div className="absolute bottom-1.5 left-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => movePhoto(i, -1)}
+                    disabled={i === 0}
+                    className="bg-black/70 hover:bg-[#F97316] disabled:opacity-30 disabled:hover:bg-black/70 text-white rounded-lg p-1 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                    title="Μετακίνηση πίσω"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => movePhoto(i, 1)}
+                    disabled={i === photos.length - 1}
+                    className="bg-black/70 hover:bg-[#F97316] disabled:opacity-30 disabled:hover:bg-black/70 text-white rounded-lg p-1 cursor-pointer disabled:cursor-not-allowed transition-colors"
+                    title="Μετακίνηση μπροστά"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </button>
+                </div>
+
                 <button
                   onClick={() => removePhoto(url)}
                   className="absolute top-1.5 right-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg p-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"

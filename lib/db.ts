@@ -3,6 +3,8 @@ import { supabase } from "./supabase";
 
 export type PostType = "article" | "tutorial" | "scouting" | "document";
 export type SortBy = "newest" | "highest_rated" | "most_viewed";
+export type VideoFormat = "regular" | "shorts";
+export type FormatFilter = "all" | "regular" | "shorts";
 
 export interface Post {
   id: number;
@@ -17,6 +19,7 @@ export interface Post {
   thumbnail_url: string;
   thumbnail_position: string;
   video_url: string;
+  video_format: VideoFormat;
   created_at: string;
   avg_rating?: number;
 }
@@ -42,7 +45,8 @@ function attachAvgRating(row: PostWithRatings): Post {
 export async function getPosts(
   type?: PostType,
   sort: SortBy = "newest",
-  publishedOnly = true
+  publishedOnly = true,
+  format: FormatFilter = "all"
 ): Promise<Post[]> {
   let query = supabase
     .from("posts")
@@ -50,6 +54,7 @@ export async function getPosts(
 
   if (type) query = query.eq("type", type);
   if (publishedOnly) query = query.eq("published", 1);
+  if (format !== "all") query = query.eq("video_format", format);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -76,9 +81,10 @@ export async function getPostsPaginated(
   type: PostType | undefined,
   sort: SortBy = "newest",
   page = 1,
-  limit = 9
+  limit = 9,
+  format: FormatFilter = "all"
 ): Promise<{ posts: Post[]; total: number }> {
-  const all = await getPosts(type, sort);
+  const all = await getPosts(type, sort, true, format);
   const total = all.length;
   const offset = (page - 1) * limit;
   return { posts: all.slice(offset, offset + limit), total };
