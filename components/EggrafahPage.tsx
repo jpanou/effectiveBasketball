@@ -158,11 +158,11 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[55] bg-[#0A0A0A]/95 overflow-y-auto">
+    <div className="fixed inset-0 z-[55] bg-[#0A0A0A]/95 overflow-y-auto" onClick={onClose}>
       {/* Close button — fixed below the site navbar with a comfortable gap */}
       <button
         onClick={onClose}
-        className="fixed top-24 right-4 z-[60] flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#222] border border-[#333] hover:border-[#F97316]/50 text-gray-400 hover:text-white text-sm px-4 py-2 rounded-xl transition-all duration-200 cursor-pointer shadow-lg"
+        className="fixed top-24 right-4 z-[60] flex items-center gap-2 bg-[#F97316] hover:bg-[#EA6D0E] border border-[#F97316] text-white text-sm px-4 py-2 rounded-xl transition-all duration-200 cursor-pointer shadow-lg"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -170,8 +170,8 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
         Κλείσιμο
       </button>
 
-      {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 pt-32 pb-20">
+      {/* Content — stop propagation so clicks inside don't close the modal */}
+      <div className="max-w-4xl mx-auto px-6 pt-32 pb-20" onClick={(e) => e.stopPropagation()}>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
