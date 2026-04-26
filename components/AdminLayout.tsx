@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
 const navItems = [
@@ -76,12 +77,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside className="w-60 bg-[#0D0D0D] border-r border-[#1A1A1A] flex flex-col">
         <div className="p-6 border-b border-[#1A1A1A]">
-          <Link href="/" className="block cursor-pointer">
+          <Link href="/" className="flex items-center gap-2 cursor-pointer">
+            <Image
+              src="/assets/basketball-coach-logo-transparent.png"
+              alt="Effective Basketball"
+              width={32}
+              height={32}
+              className="h-8 w-auto object-contain"
+            />
             <span
               className="text-lg text-white"
               style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
             >
-              <span className="text-[#F97316]">EB</span> Admin
+              Admin
             </span>
           </Link>
         </div>

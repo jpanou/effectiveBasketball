@@ -146,8 +146,8 @@ function PreviewOverlay({
           </span>
         </div>
 
-        {/* Thumbnail — articles/scouting regular only (shorts skip the hero) */}
-        {effectiveThumbnail && type !== "tutorial" && !isShorts && (
+        {/* Hero thumbnail — shown for everything EXCEPT regular tutorials */}
+        {effectiveThumbnail && !(type === "tutorial" && !isShorts) && (
           <div className="mb-8 rounded-2xl overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -159,9 +159,26 @@ function PreviewOverlay({
           </div>
         )}
 
-        {/* Video — shorts: vertical 9:16; tutorial regular: full-width before content */}
-        {videoUrl && (type === "tutorial" || isShorts) && (
-          <div className={isShorts ? "mb-8 mx-auto w-full max-w-[360px] rounded-2xl overflow-hidden bg-black" : "mb-8 rounded-2xl overflow-hidden bg-black"}>
+        {/* Video before content — regular tutorials only (16:9, full width) */}
+        {videoUrl && type === "tutorial" && !isShorts && (
+          <div className="mb-8 rounded-2xl overflow-hidden bg-black">
+            <VideoEmbed url={videoUrl} title={title} />
+          </div>
+        )}
+
+        {/* Content */}
+        {content ? (
+          <div
+            className="prose-eb"
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        ) : (
+          <p className="text-gray-600 italic">Χωρίς περιεχόμενο ακόμα...</p>
+        )}
+
+        {/* Video after content — articles/scouting (any format) AND tutorial+shorts; shorts in 9:16 */}
+        {videoUrl && !(type === "tutorial" && !isShorts) && (
+          <div className={isShorts ? "mt-8 mx-auto w-full max-w-[360px] rounded-2xl overflow-hidden bg-black" : "mt-8 rounded-2xl overflow-hidden bg-black"}>
             {(() => {
               const yt = getYouTubeId(videoUrl);
               return yt ? (
@@ -176,23 +193,6 @@ function PreviewOverlay({
                 <video controls className={isShorts ? "w-full aspect-[9/16]" : "w-full"} src={videoUrl}>Ο browser σας δεν υποστηρίζει video.</video>
               );
             })()}
-          </div>
-        )}
-
-        {/* Content */}
-        {content ? (
-          <div
-            className="prose-eb"
-            dangerouslySetInnerHTML={{ __html: content }}
-          />
-        ) : (
-          <p className="text-gray-600 italic">Χωρίς περιεχόμενο ακόμα...</p>
-        )}
-
-        {/* Video after content — articles and scouting regular only */}
-        {videoUrl && type !== "tutorial" && !isShorts && (
-          <div className="mt-8 rounded-2xl overflow-hidden bg-black">
-            <VideoEmbed url={videoUrl} title={title} />
           </div>
         )}
       </div>
