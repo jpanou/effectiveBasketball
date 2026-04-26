@@ -181,11 +181,15 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
             Έγγραφο
           </span>
           <h1
-            className="text-4xl md:text-6xl text-white mt-4 mb-6 leading-tight"
+            className="text-4xl md:text-6xl text-white mt-4 mb-3 leading-tight"
             style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
           >
             {post.title}
           </h1>
+
+          {post.excerpt && (
+            <p className="text-gray-400 text-base leading-relaxed mb-6">{post.excerpt}</p>
+          )}
 
           {ytId ? (
             <iframe
