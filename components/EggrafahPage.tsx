@@ -32,45 +32,96 @@ function PdfIcon({ className }: { className?: string }) {
 }
 
 function DocumentCard({ post, onClick }: { post: Post; onClick: () => void }) {
-  const isPdfIcon = post.thumbnail_url === "/assets/pdf-thumbnail.svg";
-  const hasThumb = post.thumbnail_url && !isPdfIcon;
+  const isPdfThumb = post.thumbnail_url === "/assets/pdf-thumbnail.svg";
+  const hasRealImage = !!post.thumbnail_url && !isPdfThumb && isImageUrl(post.thumbnail_url);
+  const ytId = (!post.thumbnail_url || isPdfThumb) && post.video_url ? getYouTubeId(post.video_url) : null;
 
   return (
     <button
       onClick={onClick}
-      className="group w-full aspect-video bg-[#1A1A1A] rounded-2xl overflow-hidden relative cursor-pointer hover:ring-2 hover:ring-[#F97316]/40 hover:shadow-[0_0_24px_rgba(249,115,22,0.12)] transition-all duration-300"
+      className="group w-full text-left bg-[#111] border border-[#222] rounded-2xl overflow-hidden hover:border-[#F97316]/40 hover:shadow-[0_0_24px_rgba(249,115,22,0.12)] transition-all duration-300 cursor-pointer"
     >
-      {isPdfIcon ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src="/assets/pdf-thumbnail.svg"
-          alt="PDF"
-          className="w-full h-full object-contain p-8 group-hover:scale-105 transition-transform duration-300"
-        />
-      ) : hasThumb ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={post.thumbnail_url}
-          alt={post.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center">
-          <PdfIcon className="w-16 h-16 text-[#333]" />
+      {/* Thumbnail */}
+      <div className="relative h-48 bg-[#1A1A1A] overflow-hidden">
+        {isPdfThumb ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/assets/pdf-thumbnail.svg"
+            alt="PDF"
+            className="w-full h-full object-contain p-6 group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : hasRealImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.thumbnail_url}
+            alt={post.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            style={{ objectPosition: post.thumbnail_position || "center center" }}
+          />
+        ) : ytId ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
+            alt={post.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <PdfIcon className="w-12 h-12 text-[#333]" />
+          </div>
+        )}
+        <div className="absolute top-3 left-3">
+          <span className="bg-[#F97316] text-white text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wide">
+            Έγγραφο
+          </span>
         </div>
-      )}
+      </div>
 
-      {/* Hover overlay */}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300 flex items-center justify-center">
-        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/70 text-white text-sm px-4 py-2 rounded-lg border border-white/10">
-          Προβολή
-        </span>
+      {/* Body */}
+      <div className="p-5 flex flex-col">
+        <h3
+          className="text-lg text-white mb-2 group-hover:text-[#F97316] transition-colors duration-200 line-clamp-2"
+          style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
+        >
+          {post.title}
+        </h3>
+        <div className="mb-4 min-h-[2.5rem]">
+          {post.excerpt && (
+            <>
+              <p className="text-gray-500 text-sm leading-relaxed line-clamp-1">{post.excerpt}</p>
+              <span className="text-[#F97316] text-xs font-medium mt-0.5 inline-block">Δες περισσότερα</span>
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4 text-xs text-gray-600 mt-auto">
+          <span className="flex items-center gap-1">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+            {post.views}
+          </span>
+          {post.avg_rating !== undefined && (post.avg_rating as number) > 0 && (
+            <span className="flex items-center gap-1 text-[#F97316]">
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+              {(post.avg_rating as number).toFixed(1)}
+            </span>
+          )}
+          <span className="ml-auto">{(() => { const d = new Date(post.created_at); return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`; })()}</span>
+        </div>
       </div>
     </button>
   );
 }
 
 function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
+  const [rating, setRating] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [rated, setRated] = useState(false);
+
   const ytId = getYouTubeId(post.video_url || "");
   const isVideoPdf = !ytId && post.video_url ? isPdfUrl(post.video_url) : false;
   const isThumbnailPdf = !post.video_url && post.thumbnail_url ? isPdfUrl(post.thumbnail_url) : false;
@@ -81,12 +132,23 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
     return () => { document.body.style.overflow = ""; };
   }, []);
 
+  async function submitRating(score: number) {
+    if (rated) return;
+    setRating(score);
+    setRated(true);
+    await fetch(`/api/posts/${post.slug}/rate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ score }),
+    });
+  }
+
   return (
-    <div className="fixed inset-0 z-50 bg-[#0A0A0A]/95 overflow-y-auto">
-      {/* Fixed close button — always visible regardless of scroll */}
+    <div className="fixed inset-0 z-[55] bg-[#0A0A0A]/95 overflow-y-auto">
+      {/* Close button — fixed just below the site navbar */}
       <button
         onClick={onClose}
-        className="fixed top-4 right-4 z-[60] flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#222] border border-[#333] hover:border-[#F97316]/50 text-gray-400 hover:text-white text-sm px-4 py-2 rounded-xl transition-all duration-200 cursor-pointer shadow-lg"
+        className="fixed top-20 right-4 z-[60] flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#222] border border-[#333] hover:border-[#F97316]/50 text-gray-400 hover:text-white text-sm px-4 py-2 rounded-xl transition-all duration-200 cursor-pointer shadow-lg"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -95,7 +157,7 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
       </button>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-6 pt-16 pb-20">
+      <div className="max-w-4xl mx-auto px-6 pt-32 pb-20">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -155,6 +217,35 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
           ) : (
             <p className="text-gray-600 text-center py-20">Δεν υπάρχει αρχείο</p>
           )}
+
+          {/* Rating */}
+          <div className="mt-12 pt-8 border-t border-[#222]">
+            <p className="text-gray-400 text-sm mb-4">Αξιολόγησε αυτό το έγγραφο:</p>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => submitRating(star)}
+                  onMouseEnter={() => !rated && setHover(star)}
+                  onMouseLeave={() => !rated && setHover(0)}
+                  disabled={rated}
+                  className="cursor-pointer transition-transform duration-150 hover:scale-110 disabled:cursor-default"
+                  aria-label={`Βαθμολογία ${star}`}
+                >
+                  <svg
+                    className={`w-8 h-8 transition-colors duration-150 ${
+                      star <= (hover || rating) ? "text-[#F97316]" : "text-[#333]"
+                    }`}
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+            {rated && <p className="mt-3 text-[#F97316] text-sm">Ευχαριστούμε για την αξιολόγησή σου!</p>}
+          </div>
         </motion.div>
       </div>
     </div>
@@ -228,7 +319,7 @@ export default function EggrafahPage({ initialPosts }: { initialPosts: Post[] })
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-[#111] border border-[#222] rounded-2xl aspect-video animate-pulse" />
+              <div key={i} className="bg-[#111] border border-[#222] rounded-2xl h-64 animate-pulse" />
             ))}
           </div>
         ) : posts.length === 0 ? (
