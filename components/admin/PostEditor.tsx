@@ -477,7 +477,7 @@ export default function PostEditor({ post }: Props) {
               onChange={(e) => handleTitleChange(e.target.value)}
               placeholder="Τίτλος ανάρτησης"
             />
-            <div className="absolute top-1/2 right-2 -translate-y-1/2">
+            <div className="absolute inset-y-0 right-2 flex items-center">
               <EmojiPicker
                 onPick={(emoji) => insertAtCursor(titleRef.current, title, emoji, (v) => {
                   setTitle(v);

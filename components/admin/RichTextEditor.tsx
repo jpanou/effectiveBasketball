@@ -42,9 +42,9 @@ export default function RichTextEditor({ value, onChange }: Props) {
   }
 
   return (
-    <div className="border border-[#333] rounded-xl overflow-hidden focus-within:border-[#F97316] transition-colors">
+    <div className="border border-[#333] rounded-xl focus-within:border-[#F97316] transition-colors">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 px-3 py-2 bg-[#161616] border-b border-[#2A2A2A]">
+      <div className="flex flex-wrap items-center gap-0.5 px-3 py-2 bg-[#161616] border-b border-[#2A2A2A] rounded-t-xl">
         <ToolbarBtn onClick={() => exec("bold")} title="Bold" className="font-bold">B</ToolbarBtn>
         <ToolbarBtn onClick={() => exec("italic")} title="Italic" className="italic">I</ToolbarBtn>
         <ToolbarBtn onClick={() => exec("underline")} title="Underline" className="underline">U</ToolbarBtn>
@@ -122,7 +122,7 @@ export default function RichTextEditor({ value, onChange }: Props) {
             document.execCommand("insertText", false, emoji);
             sync();
           }}
-          align="left"
+          align="right"
         />
       </div>
 
@@ -132,7 +132,7 @@ export default function RichTextEditor({ value, onChange }: Props) {
         contentEditable
         suppressContentEditableWarning
         onInput={sync}
-        className="min-h-64 max-h-[500px] overflow-y-auto p-4 text-sm text-gray-200 bg-[#1A1A1A] leading-relaxed outline-none
+        className="min-h-64 max-h-[500px] overflow-y-auto p-4 text-sm text-gray-200 bg-[#1A1A1A] leading-relaxed outline-none rounded-b-xl
           [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mb-2 [&_h2]:mt-4
           [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-white [&_h3]:mb-1 [&_h3]:mt-3
           [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-2
