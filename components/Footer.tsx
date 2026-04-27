@@ -11,6 +11,15 @@ const pages = [
   { title: "Σχετικά", href: "/about" },
 ];
 
+const externalLinks = [
+  { title: "NBA", href: "https://www.nba.com/" },
+  { title: "EuroLeague", href: "https://www.euroleaguebasketball.net/" },
+  { title: "FIBA", href: "https://www.fiba.basketball/en" },
+  { title: "ΕΣΑΚΕ", href: "https://www.esake.gr/" },
+  { title: "Basket.gr", href: "https://www.basket.gr/" },
+  { title: "ΕΣΚΑ", href: "https://eska.gr/" },
+];
+
 const emails = [
   "ioannisgstratakos@protonmail.com",
   "basketball4you@protonmail.com",
@@ -127,13 +136,11 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Right: pages + contact columns */}
-          <div className="grid grid-cols-2 gap-8 lg:flex lg:gap-24 lg:w-3/5 lg:justify-end">
-            {/* Pages */}
+          {/* Right: pages + links + contact columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 lg:flex lg:gap-16 lg:w-3/5 lg:justify-end">
+            {/* Pages (left) */}
             <div>
-              <h3
-                className="text-xs uppercase tracking-widest text-[#F97316] mb-5"
-              >
+              <h3 className="text-xs uppercase tracking-widest text-[#F97316] mb-5">
                 Σελίδες
               </h3>
               <ul className="space-y-3">
@@ -150,11 +157,30 @@ export default function Footer() {
               </ul>
             </div>
 
-            {/* Contact */}
+            {/* Links (middle) */}
             <div>
-              <h3
-                className="text-xs uppercase tracking-widest text-[#F97316] mb-5"
-              >
+              <h3 className="text-xs uppercase tracking-widest text-[#F97316] mb-5">
+                Links
+              </h3>
+              <ul className="space-y-3">
+                {externalLinks.map((l) => (
+                  <li key={l.href}>
+                    <a
+                      href={l.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-gray-500 hover:text-white transition-colors duration-150"
+                    >
+                      {l.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Contact (right) */}
+            <div>
+              <h3 className="text-xs uppercase tracking-widest text-[#F97316] mb-5">
                 Επικοινωνία
               </h3>
               <ul className="space-y-3">

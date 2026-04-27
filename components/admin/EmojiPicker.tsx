@@ -1,19 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
+import type { EmojiClickData } from "emoji-picker-react";
 
-const EMOJIS = [
-  // Basketball / sports / power
-  "🏀", "🏆", "🥇", "🥈", "🥉", "🎯", "💪", "🔥", "⚡", "💯",
-  // Reactions
-  "😀", "😄", "😎", "🤩", "🥳", "😂", "🤔", "👀", "😱", "🙌",
-  // Hands / approval
-  "👍", "👎", "👏", "✊", "🤝", "🙏", "💥", "✨", "⭐", "🌟",
-  // Hearts / status
-  "❤️", "💙", "💚", "🧡", "💜", "🖤", "✅", "❌", "❓", "❗",
-  // Misc useful
-  "⏰", "📅", "📌", "📍", "🎉", "🎊", "🚀", "💡", "📈", "📊",
-];
+const EmojiPickerReact = dynamic(() => import("emoji-picker-react"), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-[#161616] border border-[#333] rounded-xl px-4 py-6 text-gray-500 text-xs w-[320px]">
+      Φόρτωση…
+    </div>
+  ),
+});
 
 interface Props {
   onPick: (emoji: string) => void;
@@ -48,22 +46,22 @@ export default function EmojiPicker({ onPick, align = "right" }: Props) {
       </button>
       {open && (
         <div
-          className={`absolute z-50 ${align === "right" ? "right-0" : "left-0"} top-full mt-1 bg-[#161616] border border-[#333] rounded-xl shadow-xl p-2 grid grid-cols-10 gap-0.5 w-[280px]`}
+          className={`absolute z-50 ${align === "right" ? "right-0" : "left-0"} top-full mt-1`}
+          onMouseDown={(e) => e.preventDefault()}
         >
-          {EMOJIS.map((e) => (
-            <button
-              key={e}
-              type="button"
-              onMouseDown={(ev) => ev.preventDefault()}
-              onClick={() => {
-                onPick(e);
-                setOpen(false);
-              }}
-              className="text-lg p-1 rounded hover:bg-[#2A2A2A] transition-colors cursor-pointer"
-            >
-              {e}
-            </button>
-          ))}
+          <EmojiPickerReact
+            onEmojiClick={(data: EmojiClickData) => {
+              onPick(data.emoji);
+              setOpen(false);
+            }}
+            theme={"dark" as never}
+            emojiStyle={"native" as never}
+            lazyLoadEmojis
+            width={320}
+            height={400}
+            searchPlaceholder="Αναζήτηση"
+            previewConfig={{ showPreview: false }}
+          />
         </div>
       )}
     </div>
