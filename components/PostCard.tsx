@@ -28,6 +28,8 @@ export default function PostCard({ post }: { post: Post }) {
           <img
             src={post.thumbnail_url}
             alt={post.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             style={{ objectPosition: post.thumbnail_position || "center center" }}
           />

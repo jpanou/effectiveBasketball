@@ -103,6 +103,8 @@ function DocumentCard({ post, onClick }: { post: Post; onClick: () => void }) {
           <img
             src="/assets/pdf-thumbnail.svg"
             alt="PDF"
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-contain p-6 group-hover:scale-105 transition-transform duration-300"
           />
         ) : hasRealImage ? (
@@ -110,6 +112,8 @@ function DocumentCard({ post, onClick }: { post: Post; onClick: () => void }) {
           <img
             src={post.thumbnail_url}
             alt={post.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             style={{ objectPosition: post.thumbnail_position || "center center" }}
           />
@@ -118,6 +122,8 @@ function DocumentCard({ post, onClick }: { post: Post; onClick: () => void }) {
           <img
             src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
             alt={post.title}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
@@ -280,6 +286,7 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
             <iframe
               src={`https://www.youtube.com/embed/${ytId}`}
               className="w-full aspect-video rounded-2xl border border-[#222]"
+              loading="lazy"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               title={post.title}
@@ -288,6 +295,7 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
             <iframe
               src={post.video_url}
               className="w-full rounded-2xl border border-[#222]"
+              loading="lazy"
               style={{ height: "80vh" }}
               title={post.title}
             />
@@ -295,6 +303,7 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
             <iframe
               src={post.thumbnail_url}
               className="w-full rounded-2xl border border-[#222]"
+              loading="lazy"
               style={{ height: "80vh" }}
               title={post.title}
             />
@@ -304,6 +313,7 @@ function DocumentModal({ post, onClose }: { post: Post; onClose: () => void }) {
               <img
                 src={post.thumbnail_url}
                 alt={post.title}
+                decoding="async"
                 className="w-full rounded-2xl"
               />
               <div className="mt-4 flex justify-end">

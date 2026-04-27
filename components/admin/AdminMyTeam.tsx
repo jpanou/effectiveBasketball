@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { compressImage } from "@/lib/compressImage";
 
 const inputCls =
   "w-full bg-[#0A0A0A] border border-[#333] rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#F97316] transition-colors";
@@ -38,6 +39,7 @@ export default function AdminMyTeam() {
     }
     setUploading(true);
     try {
+      const toUpload = await compressImage(file, { maxSizeMB: 0.6, maxWidthOrHeight: 1920 });
       const urlRes = await fetch(`/api/admin/upload-url?name=${encodeURIComponent(file.name)}`);
       const urlData = await urlRes.json().catch(() => ({}));
       if (!urlRes.ok) throw new Error(urlData.error || `HTTP ${urlRes.status}`);
@@ -45,8 +47,8 @@ export default function AdminMyTeam() {
 
       const uploadRes = await fetch(signedUrl, {
         method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: toUpload,
+        headers: { "Content-Type": toUpload.type || "application/octet-stream" },
       });
       if (!uploadRes.ok) {
         const body = await uploadRes.text().catch(() => "");
@@ -149,7 +151,7 @@ export default function AdminMyTeam() {
             {photos.map((url, i) => (
               <div key={url} className="relative group aspect-video rounded-xl overflow-hidden border border-[#222]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt={`Φωτογραφία ${i + 1}`} className="w-full h-full object-cover" />
+                <img src={url} alt={`Φωτογραφία ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
 
                 {/* Order badge */}
                 <div className="absolute top-1.5 left-1.5 bg-black/70 backdrop-blur-sm text-white text-xs font-semibold px-2 py-0.5 rounded-md">

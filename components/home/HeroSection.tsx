@@ -11,6 +11,7 @@ export default function HeroSection() {
         loop
         muted
         playsInline
+        preload="metadata"
         className="absolute inset-0 w-full h-full object-cover"
       >
         <source src="/assets/Stratakos_hero.mp4" type="video/mp4" />

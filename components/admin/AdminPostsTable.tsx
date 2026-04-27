@@ -67,7 +67,7 @@ export default function AdminPostsTable({ initialPosts }: { initialPosts: Post[]
           <div className="relative h-40 bg-[#1A1A1A] group">
             {post.thumbnail_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={post.thumbnail_url} alt={post.title} className="w-full h-full object-cover" />
+              <img src={post.thumbnail_url} alt={post.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <svg className="w-10 h-10 text-[#333]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1}>

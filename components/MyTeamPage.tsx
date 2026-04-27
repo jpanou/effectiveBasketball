@@ -19,6 +19,7 @@ export default function MyTeamPage({ settings }: { settings: TeamSettings }) {
           <img
             src={lightbox}
             alt=""
+            decoding="async"
             className="max-w-full max-h-[72vh] object-contain rounded-2xl shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           />
@@ -111,6 +112,8 @@ export default function MyTeamPage({ settings }: { settings: TeamSettings }) {
                 <img
                   src={url}
                   alt={`${settings.team_name} - φωτογραφία ${i + 1}`}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">

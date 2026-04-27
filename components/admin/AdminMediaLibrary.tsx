@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { compressImage } from "@/lib/compressImage";
 
 const isVideo = (url: string) => /\.(mp4|webm|mov|avi)$/i.test(url);
 const isPdf = (url: string) => /\.pdf(\?|$)/i.test(url);
@@ -50,6 +51,9 @@ export default function AdminMediaLibrary({ initialFiles }: { initialFiles: stri
     setUploading(true);
     setError(null);
     try {
+      const toUpload = file.type.startsWith("image/")
+        ? await compressImage(file, { maxSizeMB: 0.6, maxWidthOrHeight: 1920 })
+        : file;
       const urlRes = await fetch(`/api/admin/upload-url?name=${encodeURIComponent(file.name)}`);
       const urlData = await urlRes.json().catch(() => ({}));
       if (!urlRes.ok) throw new Error(urlData.error || `HTTP ${urlRes.status}`);
@@ -57,8 +61,8 @@ export default function AdminMediaLibrary({ initialFiles }: { initialFiles: stri
 
       const uploadRes = await fetch(signedUrl, {
         method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: toUpload,
+        headers: { "Content-Type": toUpload.type || "application/octet-stream" },
       });
       if (!uploadRes.ok) {
         const body = await uploadRes.text().catch(() => "");
@@ -118,7 +122,7 @@ export default function AdminMediaLibrary({ initialFiles }: { initialFiles: stri
                 </div>
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={url} alt={url} className="w-full h-full object-cover" />
+                <img src={url} alt={url} loading="lazy" decoding="async" className="w-full h-full object-cover" />
               )}
               {/* Overlay */}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-2">

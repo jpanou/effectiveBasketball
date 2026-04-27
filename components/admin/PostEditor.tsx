@@ -6,6 +6,7 @@ import type { Post } from "@/lib/db";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import Toggle from "@/components/admin/Toggle";
 import EmojiPicker from "@/components/admin/EmojiPicker";
+import { compressImage } from "@/lib/compressImage";
 import { Cropper, CropperCropArea, CropperDescription, CropperImage } from "@/components/ui/image-crop";
 
 interface Props {
@@ -347,7 +348,11 @@ export default function PostEditor({ post }: Props) {
       }
     }
     try {
-      const url = await uploadToSupabase(file);
+      // Compress: thumbnails keep dimensions (strict size); shorts thumbnails capped at 1600px
+      const toUpload = field === "thumbnail"
+        ? await compressImage(file, isShorts ? { maxSizeMB: 0.5, maxWidthOrHeight: 1600 } : { maxSizeMB: 0.5 })
+        : file;
+      const url = await uploadToSupabase(toUpload);
       if (field === "thumbnail") {
         setThumbnailUrl(url);
         setThumbnailPosition("50% 50%");
@@ -370,7 +375,10 @@ export default function PostEditor({ post }: Props) {
     setUploading(true);
     setError("");
     try {
-      const url = await uploadToSupabase(file);
+      const toUpload = docFileType === "image"
+        ? await compressImage(file, { maxSizeMB: 0.6, maxWidthOrHeight: 1920 })
+        : file;
+      const url = await uploadToSupabase(toUpload);
       if (docFileType === "pdf") {
         setVideoUrl(url);
         setThumbnailUrl("/assets/pdf-thumbnail.svg");

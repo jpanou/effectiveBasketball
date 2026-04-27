@@ -124,6 +124,7 @@ export default function PostDetailPage({ post }: { post: Post }) {
             <img
               src={post.thumbnail_url}
               alt={post.title}
+              decoding="async"
               className="w-full h-64 md:h-96 object-cover"
               style={{ objectPosition: post.thumbnail_position || "center center" }}
             />
@@ -142,7 +143,7 @@ export default function PostDetailPage({ post }: { post: Post }) {
               const m = post.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
               const embedUrl = m ? `https://www.youtube.com/embed/${m[1]}` : null;
               return embedUrl ? (
-                <iframe src={embedUrl} className="w-full aspect-video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={post.title} />
+                <iframe src={embedUrl} className="w-full aspect-video" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title={post.title} />
               ) : (
                 <video controls className="w-full" src={post.video_url}>Ο browser σας δεν υποστηρίζει video.</video>
               );
@@ -175,6 +176,7 @@ export default function PostDetailPage({ post }: { post: Post }) {
                 <iframe
                   src={embedUrl}
                   className={isShorts ? "w-full aspect-[9/16]" : "w-full aspect-video"}
+                  loading="lazy"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   title={post.title}
