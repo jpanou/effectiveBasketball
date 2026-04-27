@@ -159,7 +159,7 @@ export default function Footer() {
 
             {/* Links (middle) */}
             <div>
-              <h3 className="text-xs uppercase tracking-widest text-[#F97316] mb-5">
+              <h3 className="text-sm uppercase tracking-widest text-[#F97316] mb-5">
                 Links
               </h3>
               <ul className="space-y-3">
