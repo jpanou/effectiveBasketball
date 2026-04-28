@@ -209,7 +209,8 @@ export async function subscribeNewsletter(
   const { error } = await supabase.from("newsletter").insert({ email });
   if (error) {
     if (error.code === "23505") return { success: false, error: "already_subscribed" };
-    return { success: false, error: error.message };
+    console.error("[newsletter] insert error:", error);
+    return { success: false, error: "subscription_failed" };
   }
   return { success: true };
 }
@@ -384,8 +385,11 @@ async function ensureAdminSeeded() {
   if (error) throw error;
   if (data) return;
 
-  const username = process.env.ADMIN_USERNAME || "coachStratakos";
-  const password = process.env.ADMIN_PASSWORD || "123456789";
+  const username = process.env.ADMIN_USERNAME;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!username || !password) {
+    throw new Error("ADMIN_USERNAME and ADMIN_PASSWORD environment variables must be set");
+  }
   const hash = bcrypt.hashSync(password, 10);
   await supabase.from("admin_users").insert({ username, password_hash: hash });
 }

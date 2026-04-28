@@ -1,7 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
+if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET environment variable is not set");
+const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 const COOKIE_NAME = "eb_admin_token";
 
 export async function signToken(payload: { username: string }) {
