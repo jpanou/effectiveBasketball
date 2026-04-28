@@ -73,9 +73,9 @@ export default function PostDetailPage({ post }: { post: Post }) {
 
         {/* Meta */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 1, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.4 }}
         >
           <span className="bg-[#F97316] text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
             {post.type}
@@ -115,16 +115,18 @@ export default function PostDetailPage({ post }: { post: Post }) {
         {/* Hero thumbnail — shown for everything EXCEPT regular tutorials (which auto-derive from YouTube and play before content) */}
         {post.thumbnail_url && !(post.type === "tutorial" && post.video_format !== "shorts") && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
+            initial={{ opacity: 1, scale: 0.99 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.4 }}
             className="mb-8 rounded-2xl overflow-hidden"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={post.thumbnail_url}
               alt={post.title}
-              decoding="async"
+              // @ts-expect-error fetchpriority is valid HTML but not yet in React types
+              fetchpriority="high"
+              decoding="sync"
               className="w-full h-64 md:h-96 object-cover"
               style={{ objectPosition: post.thumbnail_position || "center center" }}
             />

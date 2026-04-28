@@ -129,9 +129,9 @@ export default function PostListingPage({ title, subtitle, initialPosts, initial
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 1, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.5 }}
           className="mb-12"
         >
           <h1
@@ -206,11 +206,11 @@ export default function PostListingPage({ title, subtitle, initialPosts, initial
             {posts.map((post, i) => (
               <motion.div
                 key={post.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: i === 0 ? 1 : 0, y: i === 0 ? 0 : 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: i * 0.06 }}
               >
-                <PostCard post={post} />
+                <PostCard post={post} priority={i === 0} />
               </motion.div>
             ))}
           </div>

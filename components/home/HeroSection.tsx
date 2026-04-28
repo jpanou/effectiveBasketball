@@ -5,14 +5,14 @@ import { motion } from "motion/react";
 export default function HeroSection() {
   return (
     <section className="relative w-full h-screen min-h-[600px] overflow-hidden">
-      {/* Background video */}
+      {/* Background video — hidden on mobile to avoid 3MB download on small screens */}
       <video
         autoPlay
         loop
         muted
         playsInline
-        preload="metadata"
-        className="absolute inset-0 w-full h-full object-cover"
+        preload="none"
+        className="absolute inset-0 w-full h-full object-cover hidden sm:block"
       >
         <source src="/assets/Stratakos_hero.mp4" type="video/mp4" />
       </video>
@@ -23,9 +23,9 @@ export default function HeroSection() {
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-6">
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 1, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
         >
           <p className="text-[#F97316] text-sm md:text-base tracking-[0.3em] uppercase font-medium mb-4">
             Coach Ιωάννης Γ. Στρατάκος
