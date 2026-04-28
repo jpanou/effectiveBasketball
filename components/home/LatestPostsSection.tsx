@@ -98,7 +98,7 @@ export default function LatestPostsSection({ posts }: { posts: Post[] }) {
                       viewport={{ once: true }}
                       transition={{ duration: 0.5, delay: i * 0.08 }}
                     >
-                      <PostCard post={post} />
+                      <PostCard post={post} priority={i < 2} />
                     </motion.div>
                   </div>
                 ))}

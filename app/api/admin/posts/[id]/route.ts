@@ -52,5 +52,11 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!await auth()) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await params;
   await deletePost(Number(id));
+  revalidatePath("/articles");
+  revalidatePath("/tutorials");
+  revalidatePath("/scouting");
+  revalidatePath("/eggrafa");
+  revalidatePath("/admin/posts");
+  revalidatePath("/");
   return NextResponse.json({ success: true });
 }

@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 import { getPostsPaginated } from "@/lib/db";
 import EggrafahPage from "@/components/EggrafahPage";

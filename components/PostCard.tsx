@@ -13,7 +13,7 @@ const typeHref: Record<string, string> = {
   scouting: "scouting",
 };
 
-export default function PostCard({ post }: { post: Post }) {
+export default function PostCard({ post, priority = false }: { post: Post; priority?: boolean }) {
   const href = `/${typeHref[post.type]}/${post.slug}`;
 
   return (
@@ -28,8 +28,8 @@ export default function PostCard({ post }: { post: Post }) {
           <img
             src={post.thumbnail_url}
             alt={post.title}
-            loading="lazy"
-            decoding="async"
+            loading={priority ? "eager" : "lazy"}
+            decoding={priority ? "sync" : "async"}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             style={{ objectPosition: post.thumbnail_position || "center center" }}
           />
