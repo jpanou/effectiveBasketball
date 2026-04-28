@@ -12,6 +12,7 @@
     "@origin-space/image-cropper": "^0.1.9",
     "@supabase/supabase-js": "^2.104.0",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "bcryptjs": "^3.0.3",
     "browser-image-compression": "^2.0.2",
     "clsx": "^2.1.1",
