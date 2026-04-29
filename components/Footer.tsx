@@ -18,6 +18,7 @@ const externalLinks = [
   { title: "ΕΣΑΚΕ", href: "https://www.esake.gr/" },
   { title: "Basket.gr", href: "https://www.basket.gr/" },
   { title: "ΕΣΚΑ", href: "https://eska.gr/" },
+  { title: "ΣΕΠΚ", href: "https://sepk.gr/" },
 ];
 
 const emails = [
@@ -201,10 +202,18 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 border-t border-[#1A1A1A] pt-8">
-          <p className="text-xs text-gray-600 text-center">
+        <div className="mt-12 border-t border-[#1A1A1A] pt-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-gray-600">
             &copy; {new Date().getFullYear()} Effective Basketball. Όλα τα δικαιώματα διατηρούνται.
           </p>
+          <div className="flex items-center gap-4">
+            <Link href="/privacy-policy" className="text-xs text-gray-600 hover:text-gray-400 transition-colors duration-150">
+              Πολιτική Απορρήτου
+            </Link>
+            <Link href="/cookie-policy" className="text-xs text-gray-600 hover:text-gray-400 transition-colors duration-150">
+              Πολιτική Cookies
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
