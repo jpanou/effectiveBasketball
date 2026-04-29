@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import Link from "next/link";
 
 const STORAGE_KEY = "eb-cookie-consent";
 
@@ -46,7 +47,10 @@ export default function CookieConsent() {
               <p className="text-gray-400">
                 Χρησιμοποιούμε cookies για να βελτιώσουμε την εμπειρία σου στον ιστότοπο. Μπορείς να
                 αποδεχτείς ή να απορρίψεις τη χρήση τους. Η επιλογή σου αποθηκεύεται τοπικά στον
-                browser σου.
+                browser σου.{" "}
+                <Link href="/cookie-policy" className="text-[#F97316] hover:underline whitespace-nowrap">
+                  Πολιτική Cookies
+                </Link>
               </p>
             </div>
             <div className="flex gap-2 shrink-0">
