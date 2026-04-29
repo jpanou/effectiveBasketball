@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     revalidatePath("/articles");
     revalidatePath("/tutorials");
     revalidatePath("/scouting");
-    revalidatePath("/eggrafa");
+    revalidatePath("/xrisima");
     revalidatePath("/admin/posts");
     revalidatePath("/");
     return NextResponse.json({ success: true });

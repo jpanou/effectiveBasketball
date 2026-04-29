@@ -6,7 +6,7 @@ const pages = [
   { title: "Άρθρα", href: "/articles" },
   { title: "Tutorials", href: "/tutorials" },
   { title: "Scouting", href: "/scouting" },
-  { title: "Έγγραφα", href: "/eggrafa" },
+  { title: "Χρήσιμα", href: "/xrisima" },
   { title: "My Team", href: "/myteam" },
   { title: "Σχετικά", href: "/about" },
 ];

@@ -68,7 +68,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   revalidatePath("/articles");
   revalidatePath("/tutorials");
   revalidatePath("/scouting");
-  revalidatePath("/eggrafa");
+  revalidatePath("/xrisima");
   revalidatePath("/admin/posts");
   revalidatePath("/");
   return NextResponse.json({ success: true });
@@ -93,7 +93,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   revalidatePath("/articles");
   revalidatePath("/tutorials");
   revalidatePath("/scouting");
-  revalidatePath("/eggrafa");
+  revalidatePath("/xrisima");
   revalidatePath("/admin/posts");
   revalidatePath("/");
   return NextResponse.json({ success: true });
