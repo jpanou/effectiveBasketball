@@ -17,7 +17,7 @@ export default function AboutPage() {
             className="text-5xl md:text-7xl text-white mb-3"
             style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
           >
-            ΣΧΕΤΙΚΑ
+            ABOUT US
           </h1>
           <div className="w-16 h-0.5 bg-[#F97316]" />
         </motion.div>

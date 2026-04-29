@@ -13,7 +13,7 @@ const navLinks = [
   { href: "/scouting", label: "Scouting" },
   { href: "/xrisima", label: "Χρήσιμα" },
   { href: "/myteam", label: "My Team" },
-  { href: "/about", label: "Σχετικά" },
+  { href: "/about", label: "About Us" },
 ];
 
 export default function Navbar() {

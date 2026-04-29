@@ -8,7 +8,7 @@ const pages = [
   { title: "Scouting", href: "/scouting" },
   { title: "Χρήσιμα", href: "/xrisima" },
   { title: "My Team", href: "/myteam" },
-  { title: "Σχετικά", href: "/about" },
+  { title: "About Us", href: "/about" },
 ];
 
 const externalLinks = [
