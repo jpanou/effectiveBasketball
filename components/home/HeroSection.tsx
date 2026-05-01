@@ -11,7 +11,7 @@ export default function HeroSection() {
         loop
         muted
         playsInline
-        className="absolute inset-0 w-full h-full object-cover hidden sm:block"
+        className="absolute inset-0 w-full h-full object-cover"
         src="/assets/Stratakos_hero.mp4"
       />
 
