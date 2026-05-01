@@ -5,17 +5,15 @@ import { motion } from "motion/react";
 export default function HeroSection() {
   return (
     <section className="relative w-full h-screen min-h-[600px] overflow-hidden">
-      {/* Background video — hidden on mobile to avoid 3MB download on small screens */}
+      {/* Background video — hidden on mobile to avoid download on small screens */}
       <video
         autoPlay
         loop
         muted
         playsInline
-        preload="none"
         className="absolute inset-0 w-full h-full object-cover hidden sm:block"
-      >
-        <source src="/assets/Stratakos_hero.mp4" type="video/mp4" />
-      </video>
+        src="/assets/Stratakos_hero.mp4"
+      />
 
       {/* Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-[#0A0A0A]" />
