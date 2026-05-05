@@ -111,7 +111,7 @@ export default function AdminPostsTable({ initialPosts }: { initialPosts: Post[]
             <div>
               <h3
                 className="text-white text-base font-medium line-clamp-2 mb-1"
-                style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
+                style={{ fontFamily: "var(--font-oswald), 'Oswald', sans-serif", letterSpacing: "0.03em" }}
               >
                 {post.title}
               </h3>

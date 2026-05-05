@@ -126,7 +126,7 @@ function PreviewOverlay({
         {/* Title */}
         <h1
           className="text-4xl md:text-6xl text-white mt-4 mb-3 leading-tight"
-          style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
+          style={{ fontFamily: "var(--font-oswald), 'Oswald', sans-serif", letterSpacing: "0.03em" }}
         >
           {title || <span className="text-gray-600">Χωρίς τίτλο</span>}
         </h1>

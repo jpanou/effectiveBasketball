@@ -118,7 +118,7 @@ export default function Footer() {
             </Link>
 
             <p className="text-sm text-gray-500 leading-relaxed">
-              Μπασκετικό περιεχόμενο για παίκτες, προπονητές και οπαδούς του αθλήματος.
+              Μπασκετικό περιεχόμενο για παίκτες, προπονητές και λάτρεις του αθλήματος
             </p>
 
             <div className="flex items-center gap-4 flex-wrap">

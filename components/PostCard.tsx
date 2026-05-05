@@ -61,7 +61,7 @@ export default function PostCard({ post, priority = false }: { post: Post; prior
       <div className="p-5 flex flex-col">
         <h3
           className="text-lg text-white mb-2 group-hover:text-[#F97316] transition-colors duration-200 line-clamp-2"
-          style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
+          style={{ fontFamily: "var(--font-oswald), 'Oswald', sans-serif", letterSpacing: "0.03em" }}
         >
           {post.title}
         </h3>
