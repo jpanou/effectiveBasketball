@@ -55,6 +55,9 @@ export default function PostDetailPage({ post }: { post: Post }) {
     });
   }
 
+  const isRegularTutorial = post.type === "tutorial" && post.video_format !== "shorts";
+  const hasCustomThumb = isRegularTutorial && !!post.thumbnail_url && !post.thumbnail_url.startsWith("https://img.youtube.com/vi/");
+
   return (
     <div className="min-h-screen pt-24 pb-20 px-6">
       <div className="max-w-3xl mx-auto">
@@ -112,8 +115,8 @@ export default function PostDetailPage({ post }: { post: Post }) {
           </div>
         </motion.div>
 
-        {/* Hero thumbnail — shown for everything EXCEPT regular tutorials (which auto-derive from YouTube and play before content) */}
-        {post.thumbnail_url && !(post.type === "tutorial" && post.video_format !== "shorts") && (
+        {/* Hero thumbnail — shown for everything except regular tutorials using YouTube thumbnail */}
+        {post.thumbnail_url && (!isRegularTutorial || hasCustomThumb) && (
           <motion.div
             initial={{ opacity: 1, scale: 0.99 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -133,8 +136,8 @@ export default function PostDetailPage({ post }: { post: Post }) {
           </motion.div>
         )}
 
-        {/* Video before content — regular tutorials only (16:9, full width) */}
-        {post.video_url && post.type === "tutorial" && post.video_format !== "shorts" && (
+        {/* Video before content — regular tutorials without custom thumbnail only */}
+        {post.video_url && isRegularTutorial && !hasCustomThumb && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -162,8 +165,8 @@ export default function PostDetailPage({ post }: { post: Post }) {
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 
-        {/* Video after content — articles/scouting (any format) AND tutorial+shorts; shorts in 9:16 */}
-        {post.video_url && !(post.type === "tutorial" && post.video_format !== "shorts") && (
+        {/* Video after content — articles/scouting, tutorial+shorts, and tutorial+custom thumb */}
+        {post.video_url && (!isRegularTutorial || hasCustomThumb) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

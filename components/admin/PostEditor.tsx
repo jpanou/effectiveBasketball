@@ -84,19 +84,21 @@ function VideoEmbed({ url, title }: { url: string; title: string }) {
 }
 
 function PreviewOverlay({
-  title, excerpt, content, type, videoFormat, thumbnailUrl, thumbnailPosition, videoUrl,
+  title, excerpt, content, type, videoFormat, thumbnailUrl, thumbnailPosition, videoUrl, useCustomThumb,
   onClose,
 }: {
   title: string; excerpt: string; content: string;
   type: "article" | "tutorial" | "scouting" | "document";
   videoFormat: "regular" | "shorts";
   thumbnailUrl: string; thumbnailPosition: string; videoUrl: string;
+  useCustomThumb: boolean;
   onClose: () => void;
 }) {
   const dateStr = new Date().toLocaleDateString("el-GR", { year: "numeric", month: "long", day: "numeric" });
   const ytId = getYouTubeId(videoUrl);
   const isShorts = videoFormat === "shorts";
-  const effectiveThumbnail = type === "tutorial" && !isShorts
+  const isRegularTutorial = type === "tutorial" && !isShorts;
+  const effectiveThumbnail = isRegularTutorial && !useCustomThumb
     ? (ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : "")
     : thumbnailUrl;
 
@@ -148,8 +150,8 @@ function PreviewOverlay({
           </span>
         </div>
 
-        {/* Hero thumbnail — shown for everything EXCEPT regular tutorials */}
-        {effectiveThumbnail && !(type === "tutorial" && !isShorts) && (
+        {/* Hero thumbnail — shown for everything except regular tutorials without custom thumb */}
+        {effectiveThumbnail && !(isRegularTutorial && !useCustomThumb) && (
           <div className="mb-8 rounded-2xl overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -161,8 +163,8 @@ function PreviewOverlay({
           </div>
         )}
 
-        {/* Video before content — regular tutorials only (16:9, full width) */}
-        {videoUrl && type === "tutorial" && !isShorts && (
+        {/* Video before content — regular tutorials without custom thumb only */}
+        {videoUrl && isRegularTutorial && !useCustomThumb && (
           <div className="mb-8 rounded-2xl overflow-hidden bg-black">
             <VideoEmbed url={videoUrl} title={title} />
           </div>
@@ -178,8 +180,8 @@ function PreviewOverlay({
           <p className="text-gray-600 italic">Χωρίς περιεχόμενο ακόμα...</p>
         )}
 
-        {/* Video after content — articles/scouting (any format) AND tutorial+shorts; shorts in 9:16 */}
-        {videoUrl && !(type === "tutorial" && !isShorts) && (
+        {/* Video after content — articles/scouting, tutorial+shorts, and tutorial+custom thumb */}
+        {videoUrl && !(isRegularTutorial && !useCustomThumb) && (
           <div className={isShorts ? "mt-8 mx-auto w-full max-w-[360px] rounded-2xl overflow-hidden bg-black" : "mt-8 rounded-2xl overflow-hidden bg-black"}>
             {(() => {
               const yt = getYouTubeId(videoUrl);
@@ -224,10 +226,15 @@ export default function PostEditor({ post }: Props) {
   const [videoFormat, setVideoFormat] = useState<"regular" | "shorts">(post?.video_format === "shorts" ? "shorts" : "regular");
   const [docFileType, setDocFileType] = useState<"pdf" | "image" | "video">(detectDocFileType(post));
   const [showPreview, setShowPreview] = useState(false);
+  const [tutorialCustomThumb, setTutorialCustomThumb] = useState<"no" | "yes">(() => {
+    if (!post || post.type !== "tutorial" || post.video_format === "shorts") return "no";
+    if (!post.thumbnail_url || post.thumbnail_url.startsWith("https://img.youtube.com/vi/")) return "no";
+    return "yes";
+  });
 
   const isShorts = videoFormat === "shorts";
   const ytId = getYouTubeId(videoUrl);
-  const previewUrl = type === "tutorial" && !isShorts
+  const previewUrl = type === "tutorial" && !isShorts && tutorialCustomThumb === "no"
     ? (ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : null)
     : thumbnailUrl || null;
 
@@ -415,7 +422,7 @@ export default function PostEditor({ post }: Props) {
     // Auto-derive thumbnail from YouTube only for regular tutorials and document videos
     // (tutorial+shorts uses a manually uploaded thumbnail)
     const isAutoThumb =
-      (type === "tutorial" && !isShorts) ||
+      (type === "tutorial" && !isShorts && tutorialCustomThumb === "no") ||
       (type === "document" && docFileType === "video");
     const youtubeId = isAutoThumb ? getYouTubeId(videoUrl) : null;
     const effectiveThumbnail = youtubeId
@@ -469,6 +476,7 @@ export default function PostEditor({ post }: Props) {
           thumbnailUrl={thumbnailUrl}
           thumbnailPosition={thumbnailPosition}
           videoUrl={videoUrl}
+          useCustomThumb={tutorialCustomThumb === "yes"}
           onClose={() => setShowPreview(false)}
         />
       )}
@@ -718,8 +726,34 @@ export default function PostEditor({ post }: Props) {
               <RichTextEditor value={content} onChange={setContent} />
             </div>
 
-            {/* Thumbnail upload — shown for articles/scouting always, and for tutorial+shorts */}
-            {(type !== "tutorial" || isShorts) && (
+            {/* Επιλογή Εικόνας Κεφαλίδας — regular tutorials only */}
+            {type === "tutorial" && !isShorts && (
+              <div>
+                <label className={labelCls}>Επιλογή Εικόνας Κεφαλίδας</label>
+                <select
+                  className={inputCls}
+                  value={tutorialCustomThumb}
+                  onChange={(e) => {
+                    const val = e.target.value as "no" | "yes";
+                    setTutorialCustomThumb(val);
+                    if (val === "no") {
+                      setThumbnailUrl("");
+                      setThumbnailPosition("50% 50%");
+                      setCropZoom(1);
+                    }
+                  }}
+                >
+                  <option value="no">Όχι (χρήση YouTube thumbnail)</option>
+                  <option value="yes">Ναι (ανέβασμα custom εικόνας)</option>
+                </select>
+                <p className="mt-1.5 text-xs text-gray-600 leading-relaxed">
+                  Επίλεξε «Ναι» για να ανεβάσεις δική σου εικόνα κεφαλίδας. Με «Όχι» χρησιμοποιείται αυτόματα το thumbnail του YouTube βίντεο.
+                </p>
+              </div>
+            )}
+
+            {/* Thumbnail upload — articles/scouting always, tutorial+shorts always, tutorial+regular only if custom thumb */}
+            {(type !== "tutorial" || isShorts || tutorialCustomThumb === "yes") && (
               <div>
                 <label className={labelCls}>Εικόνα Κεφαλίδας</label>
                 <div className="flex gap-3 items-center">
