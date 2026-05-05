@@ -1,34 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { subscribeNewsletter } from "@/lib/db";
-import { validateEmail, validateOrigin } from "@/lib/validators";
+
+const MAILERLITE_API = "https://connect.mailerlite.com/api";
 
 export async function POST(req: NextRequest) {
-  if (!validateOrigin(req)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const { email } = await req.json();
 
-  const contentLength = req.headers.get("content-length");
-  if (contentLength && parseInt(contentLength) > 5_000) {
-    return NextResponse.json({ error: "payload_too_large" }, { status: 413 });
-  }
-
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
-  }
-
-  const { email } = body as Record<string, unknown>;
-  const emailCheck = validateEmail(email);
-  if (!emailCheck.valid) {
+  if (!email || typeof email !== "string" || !email.includes("@")) {
     return NextResponse.json({ error: "invalid_email" }, { status: 400 });
   }
 
-  const result = await subscribeNewsletter(String(email).trim().toLowerCase());
-  if (!result.success) {
-    if (result.error === "already_subscribed") {
-      return NextResponse.json({ error: "already_subscribed" }, { status: 409 });
-    }
-    return NextResponse.json({ error: "subscription_failed" }, { status: 500 });
+  const apiKey = process.env.MAILERLITE_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
-  return NextResponse.json({ success: true });
+
+  const res = await fetch(`${MAILERLITE_API}/subscribers`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ email, status: "active" }),
+  });
+
+  // 200 = updated existing subscriber, 201 = new subscriber
+  if (res.status === 200 || res.status === 201) {
+    return NextResponse.json({ ok: true });
+  }
+
+  // MailerLite v3 returns 200 for existing subscribers, but handle 409 just in case
+  if (res.status === 409) {
+    return NextResponse.json({ error: "already_subscribed" }, { status: 409 });
+  }
+
+  const body = await res.json().catch(() => ({}));
+  console.error("MailerLite error", res.status, body);
+  return NextResponse.json({ error: "mailerlite_error" }, { status: 502 });
 }
