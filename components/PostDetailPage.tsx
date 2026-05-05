@@ -83,7 +83,7 @@ export default function PostDetailPage({ post }: { post: Post }) {
 
           <h1
             className="text-4xl md:text-6xl text-white mt-4 mb-3 leading-tight"
-            style={{ fontFamily: "var(--font-oswald), 'Oswald', sans-serif", letterSpacing: "0.03em" }}
+            style={{ fontFamily: "var(--font-roboto-condensed), 'Roboto Condensed', sans-serif", letterSpacing: "0.03em" }}
           >
             {post.title}
           </h1>

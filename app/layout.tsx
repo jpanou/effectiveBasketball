@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Bebas_Neue, Inter, Oswald } from "next/font/google";
+import { Bebas_Neue, Inter, Roboto_Condensed } from "next/font/google";
 import ConditionalShell from "@/components/ConditionalShell";
 import ConsentAwareAnalytics from "@/components/ConsentAwareAnalytics";
 
@@ -20,10 +20,10 @@ const inter = Inter({
   adjustFontFallback: true,
 });
 
-const oswald = Oswald({
-  subsets: ["latin"],
+const robotCondensed = Roboto_Condensed({
+  subsets: ["latin", "greek"],
   display: "swap",
-  variable: "--font-oswald",
+  variable: "--font-roboto-condensed",
   weight: ["400", "500", "600", "700"],
   adjustFontFallback: true,
 });
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="el" className={`${bebasNeue.variable} ${inter.variable} ${oswald.variable}`}>
+    <html lang="el" className={`${bebasNeue.variable} ${inter.variable} ${robotCondensed.variable}`}>
       <body className="bg-[#0A0A0A] text-white antialiased" suppressHydrationWarning>
         <ConditionalShell>{children}</ConditionalShell>
         <ConsentAwareAnalytics />
