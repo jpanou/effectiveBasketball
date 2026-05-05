@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({ email, status: "active" }),
+    body: JSON.stringify({ email, status: "active", groups: ["186649815836263503"] }),
   });
 
   // 200 = updated existing subscriber, 201 = new subscriber
