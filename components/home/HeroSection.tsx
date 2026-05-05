@@ -5,8 +5,17 @@ import { motion } from "motion/react";
 export default function HeroSection() {
   return (
     <section className="relative w-full h-screen min-h-[600px] overflow-hidden">
-      {/* Mobile background — shown only when video is hidden */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1a0800] via-[#0A0A0A] to-black md:hidden" />
+      {/* Mobile background image — shown instead of video on small screens */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/hero-basketball.jpg"
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover md:hidden"
+        // @ts-expect-error fetchpriority is valid HTML but not yet in React types
+        fetchpriority="high"
+        decoding="sync"
+      />
 
       {/* Background video — hidden on mobile to avoid download + decode on slow devices */}
       <video
