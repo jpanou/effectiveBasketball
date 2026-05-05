@@ -5,13 +5,16 @@ import { motion } from "motion/react";
 export default function HeroSection() {
   return (
     <section className="relative w-full h-screen min-h-[600px] overflow-hidden">
-      {/* Background video — hidden on mobile to avoid download on small screens */}
+      {/* Mobile background — shown only when video is hidden */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1a0800] via-[#0A0A0A] to-black md:hidden" />
+
+      {/* Background video — hidden on mobile to avoid download + decode on slow devices */}
       <video
         autoPlay
         loop
         muted
         playsInline
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-cover hidden md:block"
         src="/assets/Stratakos_hero.mp4"
       />
 

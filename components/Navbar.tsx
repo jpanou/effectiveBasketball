@@ -90,15 +90,15 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu — opacity+y only, no height animation (avoids forced layout reflow) */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="md:hidden bg-[#0A0A0A]/98 border-t border-[#222]"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="md:hidden bg-[#0A0A0A]/98 border-t border-[#222] overflow-hidden"
           >
             <ul className="flex flex-col px-6 py-4 gap-4">
               {navLinks.map((link) => (
