@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "motion/react";
 import type { Post } from "@/lib/db";
 import PostCard from "@/components/PostCard";
 
@@ -128,12 +127,7 @@ export default function PostListingPage({ title, subtitle, initialPosts, initial
     <div className="min-h-screen pt-28 pb-20 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 1, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-12"
-        >
+        <div className="mb-12 page-header-appear">
           <h1
             className="text-5xl md:text-7xl text-white mb-3"
             style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
@@ -142,7 +136,7 @@ export default function PostListingPage({ title, subtitle, initialPosts, initial
           </h1>
           <div className="w-16 h-0.5 bg-[#F97316] mb-4" />
           <p className="text-gray-400 text-sm">{subtitle}</p>
-        </motion.div>
+        </div>
 
         {/* Filter bars */}
         <div className="mb-10 space-y-3">
@@ -188,11 +182,7 @@ export default function PostListingPage({ title, subtitle, initialPosts, initial
             ))}
           </div>
         ) : posts.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="border border-dashed border-[#333] rounded-2xl p-16 text-center"
-          >
+          <div className="border border-dashed border-[#333] rounded-2xl p-16 text-center card-appear">
             <p
               className="text-2xl text-white mb-2"
               style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em" }}
@@ -200,18 +190,17 @@ export default function PostListingPage({ title, subtitle, initialPosts, initial
               ΣΥΝΤΟΜΑ ΠΕΡΙΕΧΟΜΕΝΟ
             </p>
             <p className="text-gray-500 text-sm">Δεν υπάρχουν αναρτήσεις ακόμα</p>
-          </motion.div>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post, i) => (
-              <motion.div
+              <div
                 key={post.id}
-                initial={{ opacity: i === 0 ? 1 : 0, y: i === 0 ? 0 : 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.06 }}
+                className="card-appear"
+                style={{ animationDelay: `${i * 60}ms` }}
               >
                 <PostCard post={post} priority={i === 0} />
-              </motion.div>
+              </div>
             ))}
           </div>
         )}
