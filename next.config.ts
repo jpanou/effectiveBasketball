@@ -40,6 +40,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      { source: "/xrisima", destination: "/media", permanent: true },
+    ];
+  },
+
   async headers() {
     return [
       {
