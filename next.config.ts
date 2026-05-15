@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   images: {
-    formats: ["image/avif", "image/webp"],
+    formats: ["image/webp"],
     deviceSizes: [640, 828, 1080, 1200, 1920],
     imageSizes: [128, 256, 384],
     remotePatterns: [
