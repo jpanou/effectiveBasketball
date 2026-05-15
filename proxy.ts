@@ -19,8 +19,8 @@ function isRateLimited(key: string, limit: number, windowMs = 15 * 60 * 1000): b
   return false;
 }
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
-export async function middleware(request: NextRequest) {
+// ─── Proxy ────────────────────────────────────────────────────────────────────
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
 

@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "motion/react";
 import Image from "next/image";
 
 export default function HeroSection() {
@@ -35,11 +32,7 @@ export default function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center text-center px-6">
-        <motion.div
-          initial={{ opacity: 1, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        >
+        <div className="hero-content">
           <p className="text-[#F97316] text-sm md:text-base tracking-[0.3em] uppercase font-medium mb-4">
             Coach Ιωάννης Γ. Στρατάκος
           </p>
@@ -54,19 +47,14 @@ export default function HeroSection() {
           <p className="text-gray-300 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
             Δεν υπάρχει παλιό μπάσκετ, δεν υπάρχει σύγχρονο μπάσκετ, υπάρχει αποτελεσματικό μπάσκετ ! ! ! !
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 0.6 }}
-          className="absolute bottom-10 left-1/2 -translate-x-1/2"
-        >
+        <div className="hero-scroll-indicator absolute bottom-10 left-1/2 -translate-x-1/2">
           <div className="flex flex-col items-center gap-2">
             <span className="text-gray-400 text-xs tracking-widest uppercase">Scroll</span>
             <div className="w-px h-12 bg-gradient-to-b from-[#F97316] to-transparent" />
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
