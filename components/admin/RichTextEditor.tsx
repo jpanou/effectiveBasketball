@@ -14,6 +14,12 @@ const PRESET_BG_COLORS = [
   "#67E8F9", "#6EE7B7", "#86EFAC", "#FFFFFF",
 ];
 
+const PRESET_TEXT_COLORS = [
+  "#FFFFFF", "#E5E7EB", "#9CA3AF", "#6B7280",
+  "#F97316", "#EF4444", "#F59E0B", "#84CC16",
+  "#22C55E", "#06B6D4", "#3B82F6", "#A855F7",
+];
+
 function ToolbarBtn({ onClick, title, children, className = "" }: { onClick: () => void; title: string; children: React.ReactNode; className?: string }) {
   return (
     <button
@@ -32,6 +38,9 @@ export default function RichTextEditor({ value, onChange }: Props) {
   const [showBgPicker, setShowBgPicker] = useState(false);
   const [lastBgColor, setLastBgColor] = useState<string | null>(null);
   const bgPickerRef = useRef<HTMLDivElement>(null);
+  const [showTextColorPicker, setShowTextColorPicker] = useState(false);
+  const [lastTextColor, setLastTextColor] = useState<string | null>(null);
+  const textColorPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (editorRef.current) {
@@ -51,6 +60,17 @@ export default function RichTextEditor({ value, onChange }: Props) {
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [showBgPicker]);
 
+  useEffect(() => {
+    if (!showTextColorPicker) return;
+    function handleOutside(e: MouseEvent) {
+      if (textColorPickerRef.current && !textColorPickerRef.current.contains(e.target as Node)) {
+        setShowTextColorPicker(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [showTextColorPicker]);
+
   function exec(cmd: string, arg?: string) {
     document.execCommand(cmd, false, arg);
     editorRef.current?.focus();
@@ -59,6 +79,18 @@ export default function RichTextEditor({ value, onChange }: Props) {
 
   function sync() {
     if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }
+
+  function applyTextColor(color: string | null) {
+    editorRef.current?.focus();
+    if (color === null) {
+      document.execCommand("foreColor", false, "inherit");
+    } else {
+      document.execCommand("foreColor", false, color);
+      setLastTextColor(color);
+    }
+    setShowTextColorPicker(false);
+    sync();
   }
 
   function applyBgColor(color: string | null) {
@@ -126,6 +158,65 @@ export default function RichTextEditor({ value, onChange }: Props) {
         </ToolbarBtn>
 
         <span className="w-px h-5 bg-[#333] mx-1" />
+
+        {/* Text color picker */}
+        <div ref={textColorPickerRef} className="relative">
+          <button
+            type="button"
+            title="Χρώμα κειμένου"
+            onMouseDown={(e) => { e.preventDefault(); setShowTextColorPicker((v) => !v); }}
+            className="px-2.5 py-1.5 rounded text-gray-300 hover:text-white hover:bg-[#2A2A2A] transition-colors cursor-pointer flex flex-col items-center gap-0.5"
+          >
+            <span className="text-sm font-bold leading-none" style={{ color: lastTextColor ?? "#FFFFFF" }}>A</span>
+            <div
+              className="w-4 h-1 rounded-sm border border-black/20"
+              style={{ backgroundColor: lastTextColor ?? "#FFFFFF" }}
+            />
+          </button>
+
+          {showTextColorPicker && (
+            <div className="absolute top-full left-0 mt-1 bg-[#1A1A1A] border border-[#333] rounded-xl p-3 shadow-2xl z-50 w-48">
+              {/* Default color */}
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); applyTextColor(null); }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-[#2A2A2A] transition-colors cursor-pointer mb-2"
+              >
+                <div className="w-5 h-5 rounded border border-[#444] flex items-center justify-center shrink-0">
+                  <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                Προεπιλογή
+              </button>
+
+              {/* Preset swatches */}
+              <div className="grid grid-cols-6 gap-1.5 mb-2">
+                {PRESET_TEXT_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    title={color}
+                    onMouseDown={(e) => { e.preventDefault(); applyTextColor(color); }}
+                    className="w-6 h-6 rounded cursor-pointer hover:scale-110 transition-transform border border-black/20 shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+
+              {/* Custom color */}
+              <div className="flex items-center gap-2 pt-2 border-t border-[#2A2A2A]">
+                <span className="text-xs text-gray-500 shrink-0">Άλλο:</span>
+                <input
+                  type="color"
+                  defaultValue={lastTextColor ?? "#FFFFFF"}
+                  className="w-7 h-7 rounded cursor-pointer border border-[#333] bg-transparent p-0.5"
+                  onInput={(e) => applyTextColor((e.target as HTMLInputElement).value)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Background color picker */}
         <div ref={bgPickerRef} className="relative">
