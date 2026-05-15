@@ -1,12 +1,18 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import EmojiPicker from "@/components/admin/EmojiPicker";
 
 interface Props {
   value: string;
   onChange: (html: string) => void;
 }
+
+const PRESET_BG_COLORS = [
+  "#FEF08A", "#FDE68A", "#FED7AA", "#FCA5A5",
+  "#F9A8D4", "#D8B4FE", "#A5B4FC", "#93C5FD",
+  "#67E8F9", "#6EE7B7", "#86EFAC", "#FFFFFF",
+];
 
 function ToolbarBtn({ onClick, title, children, className = "" }: { onClick: () => void; title: string; children: React.ReactNode; className?: string }) {
   return (
@@ -23,6 +29,9 @@ function ToolbarBtn({ onClick, title, children, className = "" }: { onClick: () 
 
 export default function RichTextEditor({ value, onChange }: Props) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const [showBgPicker, setShowBgPicker] = useState(false);
+  const [lastBgColor, setLastBgColor] = useState<string | null>(null);
+  const bgPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (editorRef.current) {
@@ -30,6 +39,17 @@ export default function RichTextEditor({ value, onChange }: Props) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!showBgPicker) return;
+    function handleOutside(e: MouseEvent) {
+      if (bgPickerRef.current && !bgPickerRef.current.contains(e.target as Node)) {
+        setShowBgPicker(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [showBgPicker]);
 
   function exec(cmd: string, arg?: string) {
     document.execCommand(cmd, false, arg);
@@ -39,6 +59,18 @@ export default function RichTextEditor({ value, onChange }: Props) {
 
   function sync() {
     if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }
+
+  function applyBgColor(color: string | null) {
+    editorRef.current?.focus();
+    if (color === null) {
+      document.execCommand("hiliteColor", false, "transparent");
+    } else {
+      document.execCommand("hiliteColor", false, color);
+      setLastBgColor(color);
+    }
+    setShowBgPicker(false);
+    sync();
   }
 
   return (
@@ -92,6 +124,69 @@ export default function RichTextEditor({ value, onChange }: Props) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm0 5.25h.007v.008H3.75V12Zm0 5.25h.007v.008H3.75v-.008Z" />
           </svg>
         </ToolbarBtn>
+
+        <span className="w-px h-5 bg-[#333] mx-1" />
+
+        {/* Background color picker */}
+        <div ref={bgPickerRef} className="relative">
+          <button
+            type="button"
+            title="Χρώμα φόντου κειμένου"
+            onMouseDown={(e) => { e.preventDefault(); setShowBgPicker((v) => !v); }}
+            className="px-2.5 py-1.5 rounded text-gray-300 hover:text-white hover:bg-[#2A2A2A] transition-colors cursor-pointer flex flex-col items-center gap-0.5"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.395m3.42 3.42a15.995 15.995 0 0 0 4.764-4.648l3.876-5.814a1.151 1.151 0 0 0-1.597-1.597L14.146 6.32a15.996 15.996 0 0 0-4.649 4.763m3.42 3.42a6.776 6.776 0 0 0-3.42-3.42" />
+            </svg>
+            <div
+              className="w-4 h-1 rounded-sm border border-black/20"
+              style={{ backgroundColor: lastBgColor ?? "#FEF08A" }}
+            />
+          </button>
+
+          {showBgPicker && (
+            <div className="absolute top-full left-0 mt-1 bg-[#1A1A1A] border border-[#333] rounded-xl p-3 shadow-2xl z-50 w-48">
+              {/* No background */}
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); applyBgColor(null); }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white hover:bg-[#2A2A2A] transition-colors cursor-pointer mb-2"
+              >
+                <div className="w-5 h-5 rounded border border-[#444] flex items-center justify-center shrink-0">
+                  <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                Χωρίς φόντο
+              </button>
+
+              {/* Preset swatches */}
+              <div className="grid grid-cols-6 gap-1.5 mb-2">
+                {PRESET_BG_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    title={color}
+                    onMouseDown={(e) => { e.preventDefault(); applyBgColor(color); }}
+                    className="w-6 h-6 rounded cursor-pointer hover:scale-110 transition-transform border border-black/20 shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+
+              {/* Custom color */}
+              <div className="flex items-center gap-2 pt-2 border-t border-[#2A2A2A]">
+                <span className="text-xs text-gray-500 shrink-0">Άλλο:</span>
+                <input
+                  type="color"
+                  defaultValue={lastBgColor ?? "#FEF08A"}
+                  className="w-7 h-7 rounded cursor-pointer border border-[#333] bg-transparent p-0.5"
+                  onInput={(e) => applyBgColor((e.target as HTMLInputElement).value)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
 
         <span className="w-px h-5 bg-[#333] mx-1" />
 
