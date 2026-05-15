@@ -1,4 +1,4 @@
-export const revalidate = 60;
+export const revalidate = 3600;
 
 import HeroSection from "@/components/home/HeroSection";
 import ContentTypesSection from "@/components/home/ContentTypesSection";

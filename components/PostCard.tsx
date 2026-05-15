@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Post } from "@/lib/db";
 
 const typeLabel: Record<string, string> = {
@@ -24,14 +25,14 @@ export default function PostCard({ post, priority = false }: { post: Post; prior
       {/* Thumbnail */}
       <div className="relative h-48 bg-[#1A1A1A] overflow-hidden">
         {post.thumbnail_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={post.thumbnail_url}
             alt={post.title}
-            loading={priority ? "eager" : "lazy"}
-            decoding={priority ? "sync" : "async"}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
             style={{ objectPosition: post.thumbnail_position || "center center" }}
+            priority={priority}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">

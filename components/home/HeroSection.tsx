@@ -1,21 +1,24 @@
 "use client";
 
 import { motion } from "motion/react";
+import Image from "next/image";
 
 export default function HeroSection() {
   return (
     <section className="relative w-full h-screen min-h-[600px] overflow-hidden">
       {/* Mobile background image — shown instead of video on small screens */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/assets/hero-basketball.jpg"
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover md:hidden"
-        // @ts-expect-error fetchpriority is valid HTML but not yet in React types
-        fetchpriority="high"
-        decoding="sync"
-      />
+      <div className="absolute inset-0 md:hidden">
+        <Image
+          src="/assets/hero-basketball.jpg"
+          alt=""
+          aria-hidden="true"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+          quality={85}
+        />
+      </div>
 
       {/* Background video — hidden on mobile to avoid download + decode on slow devices */}
       <video
