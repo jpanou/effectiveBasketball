@@ -11,7 +11,7 @@ const navLinks = [
   { href: "/articles", label: "Άρθρα" },
   { href: "/tutorials", label: "Tutorials" },
   { href: "/scouting", label: "Scouting" },
-  { href: "/xrisima", label: "Χρήσιμα" },
+  { href: "/media", label: "MEDIA" },
   { href: "/myteam", label: "My Team" },
   { href: "/about", label: "About Us" },
 ];

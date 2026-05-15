@@ -37,8 +37,8 @@ const types = [
     ),
   },
   {
-    href: "/xrisima",
-    label: "Χρήσιμα",
+    href: "/media",
+    label: "MEDIA",
     desc: "Φωτογραφίες, έγγραφα και αρχεία προς μελέτη",
     icon: (
       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
